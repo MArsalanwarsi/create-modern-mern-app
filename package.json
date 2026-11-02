@@ -7,6 +7,11 @@
     "create-fullstack-mern": "./bin/index.js"
   },
   "main": "./src/cli.js",
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
   "scripts": {
     "start": "node ./bin/index.js",
     "test": "node --test test/*.test.js"

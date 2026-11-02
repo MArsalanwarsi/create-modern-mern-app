@@ -1,4 +1,5 @@
 import { describe, it } from 'node:test';
+import path from 'node:path';
 import assert from 'node:assert';
 import { sanitizePackageName, validateTargetDir } from '../src/utils/naming.js';
 
@@ -7,7 +8,7 @@ describe('naming utilities', () => {
     assert.strictEqual(sanitizePackageName('My Fullstack App'), 'my-fullstack-app');
     assert.strictEqual(sanitizePackageName('@scope/my-app'), '@scope/my-app');
     assert.strictEqual(sanitizePackageName('special__#chars!'), 'special-chars');
-    assert.strictEqual(sanitizePackageName('.'), 'complete-npm-package');
+    assert.strictEqual(sanitizePackageName('.'), sanitizePackageName(path.basename(process.cwd())));
     assert.strictEqual(sanitizePackageName('./app'), 'app');
     assert.strictEqual(sanitizePackageName('???'), 'mern-app');
   });

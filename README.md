@@ -29,7 +29,7 @@ When you run the command, it guides you through a clean wizard:
    - `TypeScript`
    - `TypeScript + React Compiler`
 3. **Frontend Packages**:
-   - `Tailwind CSS` (Configured with PostCSS)
+   - `Tailwind CSS` (Configured with the Tailwind Vite plugin)
    - `Shadcn UI` (`components.json`, cn helper, sample button)
    - `Redux Toolkit` (Store and counter slice pre-configured)
    - `React-Toastify` (Toast notifications pre-mounted)
@@ -98,3 +98,7 @@ npm run dev
 
 - **Frontend**: [http://localhost:3000](http://localhost:3000)
 - **Backend**: [http://localhost:5000](http://localhost:5000)
+
+## Development checks
+
+Use Node.js 24.16 or newer. Generated projects support `npm run lint` from the root to check both applications with Oxlint, and `npm run build` to build them.

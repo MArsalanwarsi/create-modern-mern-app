@@ -17,40 +17,40 @@ export async function generateServer(targetDir, options) {
 
   // 1. package.json dependencies
   const dependencies = {
-    express: '^4.21.2',
-    mongoose: '^8.9.0'
+    express: '^5.3.0',
+    mongoose: '^9.11.4'
   };
 
-  const devDependencies = {};
+  const devDependencies = { oxlint: '^1.90.0' };
 
   if (hasDotenv) {
-    dependencies['dotenv'] = '^16.4.7';
+    dependencies['dotenv'] = '^18.0.9';
   }
 
   if (hasCors) {
-    dependencies['cors'] = '^2.8.5';
-    if (isTs) devDependencies['@types/cors'] = '^2.8.17';
+    dependencies['cors'] = '^2.8.6';
+    if (isTs) devDependencies['@types/cors'] = '^2.8.19';
   }
 
   if (hasMulter) {
-    dependencies['multer'] = '^1.4.5-lts.1';
-    if (isTs) devDependencies['@types/multer'] = '^1.4.12';
+    dependencies['multer'] = '^2.5.0';
+    if (isTs) devDependencies['@types/multer'] = '^2.3.0';
   }
 
   if (hasCloudinary) {
-    dependencies['cloudinary'] = '^2.5.1';
+    dependencies['cloudinary'] = '^2.11.0';
   }
 
   if (hasNodemailer) {
-    dependencies['nodemailer'] = '^6.9.16';
-    if (isTs) devDependencies['@types/nodemailer'] = '^6.4.17';
+    dependencies['nodemailer'] = '^10.3.1';
+    if (isTs) devDependencies['@types/nodemailer'] = '^8.0.2';
   }
 
   if (isTs) {
-    devDependencies['typescript'] = '^5.7.0';
-    devDependencies['tsx'] = '^4.19.2';
-    devDependencies['@types/node'] = '^22.10.0';
-    devDependencies['@types/express'] = '^5.0.0';
+    devDependencies['typescript'] = '^7.0.2';
+    devDependencies['tsx'] = '^4.23.15';
+    devDependencies['@types/node'] = '^26.6.6';
+    devDependencies['@types/express'] = '^5.0.6';
   }
 
   const serverPkg = {
@@ -59,11 +59,14 @@ export async function generateServer(targetDir, options) {
     type: 'module',
     scripts: isTs
       ? {
+          lint: 'oxlint src --deny-warnings',
           dev: 'tsx watch src/index.ts',
           build: 'tsc',
           start: 'node dist/index.js'
         }
       : {
+          lint: 'oxlint src --deny-warnings',
+          build: 'node --check src/index.js',
           dev: 'node --watch src/index.js',
           start: 'node src/index.js'
         },
@@ -78,6 +81,7 @@ export async function generateServer(targetDir, options) {
     files['tsconfig.json'] = JSON.stringify({
       compilerOptions: {
         target: "ES2022",
+        types: ["node"],
         module: "NodeNext",
         moduleResolution: "NodeNext",
         outDir: "./dist",
@@ -167,7 +171,7 @@ export async function getUsers(req${isTs ? ': Request' : ''}, res${isTs ? ': Res
   try {
     const users = await User.find().limit(50);
     res.json({ success: true, count: users.length, data: users });
-  } catch (error) {
+  } catch {
     res.status(500).json({ success: false, message: 'Server error retrieving users' });
   }
 }
@@ -219,7 +223,7 @@ export default router;
   // 8. Middlewares
   files[`src/middlewares/errorHandler.${ext}`] = `${isTs ? "import { Request, Response, NextFunction } from 'express';" : ''}
 
-export function errorHandler(err${isTs ? ': any' : ''}, req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, next${isTs ? ': NextFunction' : ''}) {
+export function errorHandler(err${isTs ? ': any' : ''}, req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, _next${isTs ? ': NextFunction' : ''}) {
   console.error('Unhandled error:', err);
   const status = err.status || 500;
   res.status(status).json({

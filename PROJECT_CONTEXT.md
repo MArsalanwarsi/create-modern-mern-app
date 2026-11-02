@@ -13,7 +13,7 @@
 - **Author:** Muhammad Arsalan Warsi
 - **License:** MIT
 - **Executable Command:** `npx create-modern-mern-app@latest [project-name]` or `npm create modern-mern-app@latest [project-name]`
-- **Runtime Requirement:** Node.js `>=18.11.0`
+- **Runtime Requirement:** Node.js `>=24.16.0`
 
 ---
 
@@ -42,7 +42,7 @@ When a developer runs `npx create-modern-mern-app@latest`, they go through this 
    - `TypeScript` (Vite + React TS)
    - `TypeScript + React Compiler` (TypeScript + React 19 Compiler)
 3. **Frontend Packages (Multi-Select):**
-   - `Tailwind CSS` (Configured with PostCSS & autoprefixer)
+   - `Tailwind CSS` (Configured with the Tailwind Vite plugin)
    - `Shadcn UI` (Auto-includes Tailwind, `components.json`, `src/lib/utils`, and sample `Button`)
    - `Redux Toolkit` (Configured `src/store/index` and `src/store/slices/counterSlice`)
    - `React-Toastify` (Configured with `<ToastContainer />` pre-mounted)
@@ -153,7 +153,7 @@ The CLI tool itself is located in `c:\Users\arsalan\Desktop\Complete Npm package
    - Fixed NodeNext TypeScript server imports to require explicit `.js` extensions for native Node ESM compatibility.
    - Enhanced `sanitizePackageName` to handle `.` (current working directory) and empty string fallbacks.
    - Added inline directory collision validation to the terminal prompt.
-   - Added `"engines": { "node": ">=18.11.0" }`.
+   - Added `"engines": { "node": ">=24.16.0" }`.
    - Fixed `"bin"` definition in `package.json` to `"create-modern-mern-app": "bin/index.js"`.
 5. **Package Payload Optimization:**  
    Using `"files": ["bin", "src", "README.md"]`, the package unpacked size is only ~46.9 kB and tarball size is ~13.9 kB.

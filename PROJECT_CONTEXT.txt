@@ -12,7 +12,7 @@ PROJECT CONTEXT & ARCHITECTURE: create-modern-mern-app
 - License: MIT
 - Execution Command: npx create-modern-mern-app@latest [project-name]
 - Alternative Command: npm create modern-mern-app@latest [project-name]
-- Node.js Runtime Requirement: >=18.11.0
+- Node.js Runtime Requirement: >=24.16.0
 
 2. PROJECT PURPOSE
 --------------------------------------------------------------------------------

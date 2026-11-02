@@ -17,46 +17,48 @@ export async function generateClient(targetDir, options) {
 
   // 1. package.json dependencies
   const dependencies = {
-    react: '^19.0.0',
-    'react-dom': '^19.0.0',
-    'react-router-dom': '^7.0.0'
+    react: '^19.3.1',
+    'react-dom': '^19.3.1',
+    'react-router-dom': '^7.18.5'
   };
 
   const devDependencies = {
-    '@vitejs/plugin-react': '^4.3.4',
-    vite: '^6.0.0'
+    '@vitejs/plugin-react': '^6.2.1',
+    oxlint: '^1.90.0',
+    vite: '^8.3.5'
   };
 
   if (isCompiler) {
-    devDependencies['babel-plugin-react-compiler'] = '^19.0.0-beta-df7b47d-20241124';
+    devDependencies['@rolldown/plugin-babel'] = '^0.3.0';
+    devDependencies['@babel/core'] = '^8.1.0';
+    devDependencies['babel-plugin-react-compiler'] = '^1.0.0';
   }
 
   if (isTs) {
-    devDependencies['typescript'] = '^5.7.0';
-    devDependencies['@types/react'] = '^19.0.0';
-    devDependencies['@types/react-dom'] = '^19.0.0';
+    devDependencies['typescript'] = '^7.0.2';
+    devDependencies['@types/react'] = '^19.3.0';
+    devDependencies['@types/react-dom'] = '^19.3.0';
   }
 
   if (hasTailwind) {
-    devDependencies['tailwindcss'] = '^3.4.17';
-    devDependencies['postcss'] = '^8.4.49';
-    devDependencies['autoprefixer'] = '^10.4.20';
+    devDependencies['tailwindcss'] = '^4.3.3';
+    devDependencies['@tailwindcss/vite'] = '^4.3.3';
   }
 
   if (hasShadcn) {
     dependencies['clsx'] = '^2.1.1';
-    dependencies['tailwind-merge'] = '^2.6.0';
-    dependencies['lucide-react'] = '^0.468.0';
+    dependencies['tailwind-merge'] = '^3.7.0';
+    dependencies['lucide-react'] = '^1.66.0';
     dependencies['class-variance-authority'] = '^0.7.1';
   }
 
   if (hasRedux) {
-    dependencies['@reduxjs/toolkit'] = '^2.5.0';
-    dependencies['react-redux'] = '^9.2.0';
+    dependencies['@reduxjs/toolkit'] = '^2.13.0';
+    dependencies['react-redux'] = '^9.3.1';
   }
 
   if (hasToastify) {
-    dependencies['react-toastify'] = '^11.0.0';
+    dependencies['react-toastify'] = '^11.2.0';
   }
 
   const clientPkg = {
@@ -67,6 +69,7 @@ export async function generateClient(targetDir, options) {
     scripts: {
       dev: 'vite',
       build: isTs ? 'tsc -b && vite build' : 'vite build',
+      lint: 'oxlint src --deny-warnings',
       preview: 'vite preview'
     },
     dependencies,
@@ -80,7 +83,6 @@ export async function generateClient(targetDir, options) {
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${projectName} - Frontend</title>
   </head>
@@ -92,27 +94,24 @@ export async function generateClient(targetDir, options) {
 `;
 
   // 3. vite.config.js / ts
-  const compilerBabelConfig = isCompiler
-    ? `babel: {
-        plugins: [['babel-plugin-react-compiler']]
-      }`
-    : '';
-
   files[`vite.config.${scriptExt}`] = `import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import react${isCompiler ? ', { reactCompilerPreset }' : ''} from '@vitejs/plugin-react';
+${isCompiler ? "import babel from '@rolldown/plugin-babel';" : ''}
+${hasTailwind ? "import tailwindcss from '@tailwindcss/vite';" : ''}
 ${hasShadcn ? "import path from 'node:path';" : ''}
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react(${compilerBabelConfig ? `{\n      ${compilerBabelConfig}\n    }` : ''})
+    react()${isCompiler ? ',\n    babel({ presets: [reactCompilerPreset()] })' : ''}${hasTailwind ? ',\n    tailwindcss()' : ''}
   ],
   server: {
+    proxy: { '/api': 'http://localhost:5000' },
     port: 3000
   }${hasShadcn ? `,
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(import.meta.dirname, './src')
     }
   }` : ''}
 });
@@ -124,6 +123,7 @@ export default defineConfig({
       compilerOptions: {
         target: "ES2022",
         useDefineForClassFields: true,
+        types: ["vite/client"],
         lib: ["ES2023", "DOM", "DOM.Iterable"],
         module: "ESNext",
         skipLibCheck: true,
@@ -138,7 +138,6 @@ export default defineConfig({
         noUnusedParameters: true,
         noFallthroughCasesInSwitch: true,
         ...(hasShadcn ? {
-          baseUrl: ".",
           paths: {
             "@/*": ["./src/*"]
           }
@@ -149,37 +148,14 @@ export default defineConfig({
   }
 
   // 5. Tailwind & Shadcn configs
-  if (hasTailwind) {
-    files['tailwind.config.js'] = `/** @type {import('tailwindcss').Config} */
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-};
-`;
-
-    files['postcss.config.js'] = `export default {
-  plugins: {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-};
-`;
-  }
-
   if (hasShadcn) {
     files['components.json'] = JSON.stringify({
       "$schema": "https://ui.shadcn.com/schema.json",
-      "style": "default",
+      "style": "new-york",
       "rsc": false,
       "tsx": isTs,
       "tailwind": {
-        "config": "tailwind.config.js",
+        "config": "",
         "css": "src/index.css",
         "baseColor": "slate",
         "cssVariables": true
@@ -193,14 +169,13 @@ export default {
     files[`src/lib/utils.${scriptExt}`] = `import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-export function cn(...inputs) {
+export function cn(...inputs${isTs ? ': import("clsx").ClassValue[]' : ''}) {
   return twMerge(clsx(inputs));
 }
 `;
 
     // Add sample Shadcn Button
-    files[`src/components/ui/button.${ext}`] = `import React from 'react';
-import { cn } from '../../lib/utils';
+    files[`src/components/ui/button.${ext}`] = `import { cn } from '../../lib/utils';
 
 export function Button({ className, children, ...props }${isTs ? ': React.ButtonHTMLAttributes<HTMLButtonElement>' : ''}) {
   return (
@@ -219,8 +194,7 @@ export function Button({ className, children, ...props }${isTs ? ': React.Button
   }
 
   // 5b. Shared components in src/components/
-  files[`src/components/Card.${ext}`] = `import React from 'react';
-
+  files[`src/components/Card.${ext}`] = `
 export function Card({ title, children }${isTs ? ': { title?: string; children: React.ReactNode }' : ''}) {
   return (
     <div style={{ background: '#ffffff', borderRadius: '8px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -234,9 +208,7 @@ export function Card({ title, children }${isTs ? ': { title?: string; children: 
   // 6. index.css
   let indexCss = '';
   if (hasTailwind) {
-    indexCss += `@tailwind base;
-@tailwind components;
-@tailwind utilities;
+    indexCss += `@import "tailwindcss";
 
 `;
   }
@@ -293,8 +265,7 @@ export type AppDispatch = typeof store.dispatch;` : ''}
   }
 
   // 8. Slices in src/layout/slices/
-  files[`src/layout/slices/Navbar.${ext}`] = `import React from 'react';
-import { Link } from 'react-router-dom';
+  files[`src/layout/slices/Navbar.${ext}`] = `import { Link } from 'react-router-dom';
 
 export function Navbar() {
   return (
@@ -313,8 +284,7 @@ export function Navbar() {
 }
 `;
 
-  files[`src/layout/slices/Footer.${ext}`] = `import React from 'react';
-
+  files[`src/layout/slices/Footer.${ext}`] = `
 export function Footer() {
   return (
     <footer style={{ padding: '1.5rem 2rem', background: '#f1f5f9', borderTop: '1px solid #e2e8f0', textAlign: 'center', color: '#64748b' }}>
@@ -324,8 +294,7 @@ export function Footer() {
 }
 `;
 
-  files[`src/layout/slices/Sidebar.${ext}`] = `import React from 'react';
-import { Link } from 'react-router-dom';
+  files[`src/layout/slices/Sidebar.${ext}`] = `import { Link } from 'react-router-dom';
 
 export function Sidebar() {
   return (
@@ -341,8 +310,7 @@ export function Sidebar() {
 }
 `;
 
-  files[`src/layout/slices/Header.${ext}`] = `import React from 'react';
-
+  files[`src/layout/slices/Header.${ext}`] = `
 export function Header() {
   return (
     <header style={{ height: '60px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem' }}>
@@ -354,8 +322,7 @@ export function Header() {
 `;
 
   // 9. Parent Layouts in src/layout/
-  files[`src/layout/WebsiteLayout.${ext}`] = `import React from 'react';
-import { Outlet } from 'react-router-dom';
+  files[`src/layout/WebsiteLayout.${ext}`] = `import { Outlet } from 'react-router-dom';
 import { Navbar } from './slices/Navbar';
 import { Footer } from './slices/Footer';
 
@@ -372,8 +339,7 @@ export function WebsiteLayout() {
 }
 `;
 
-  files[`src/layout/DashboardLayout.${ext}`] = `import React from 'react';
-import { Outlet } from 'react-router-dom';
+  files[`src/layout/DashboardLayout.${ext}`] = `import { Outlet } from 'react-router-dom';
 import { Sidebar } from './slices/Sidebar';
 import { Header } from './slices/Header';
 
@@ -393,8 +359,7 @@ export function DashboardLayout() {
 `;
 
   // 10. Website Pages in src/pages/website/
-  files[`src/pages/website/Home.${ext}`] = `import React from 'react';
-${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
+  files[`src/pages/website/Home.${ext}`] = `${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
 import { increment, decrement } from '../../store/slices/counterSlice';` : ''}
 ${hasToastify ? `import { toast } from 'react-toastify';` : ''}
 ${hasShadcn ? `import { Button } from '../../components/ui/button';` : ''}
@@ -439,8 +404,7 @@ export function Home() {
 }
 `;
 
-  files[`src/pages/website/About.${ext}`] = `import React from 'react';
-
+  files[`src/pages/website/About.${ext}`] = `
 export function About() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -453,8 +417,7 @@ export function About() {
 }
 `;
 
-  files[`src/pages/website/Contact.${ext}`] = `import React from 'react';
-
+  files[`src/pages/website/Contact.${ext}`] = `
 export function Contact() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto' }}>
@@ -468,13 +431,13 @@ export function Contact() {
 `;
 
   // 11. Dashboard Pages in src/pages/dashboard/
-  files[`src/pages/dashboard/Overview.${ext}`] = `import React, { useEffect, useState } from 'react';
+  files[`src/pages/dashboard/Overview.${ext}`] = `import { useEffect, useState } from 'react';
 
 export function Overview() {
   const [serverStatus, setServerStatus] = useState('Checking...');
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/health')
+    fetch('/api/health')
       .then(res => res.json())
       .then(data => setServerStatus(data.message || 'Connected'))
       .catch(() => setServerStatus('Backend server is not running on port 5000'));
@@ -492,8 +455,7 @@ export function Overview() {
 }
 `;
 
-  files[`src/pages/dashboard/Settings.${ext}`] = `import React from 'react';
-
+  files[`src/pages/dashboard/Settings.${ext}`] = `
 export function Settings() {
   return (
     <div>
@@ -505,8 +467,7 @@ export function Settings() {
 `;
 
   // 12. App.{jsx,tsx} with React Router DOM routes
-  files[`src/App.${ext}`] = `import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+  files[`src/App.${ext}`] = `import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WebsiteLayout } from './layout/WebsiteLayout';
 import { DashboardLayout } from './layout/DashboardLayout';
 import { Home } from './pages/website/Home';
@@ -515,7 +476,7 @@ import { Contact } from './pages/website/Contact';
 import { Overview } from './pages/dashboard/Overview';
 import { Settings } from './pages/dashboard/Settings';
 ${hasToastify ? `import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';` : ''}
+` : ''}
 
 export default function App() {
   return (
@@ -541,7 +502,7 @@ export default function App() {
 `;
 
   // 13. main.{jsx,tsx}
-  files[`src/main.${ext}`] = `import React from 'react';
+  files[`src/main.${ext}`] = `import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
@@ -549,9 +510,9 @@ ${hasRedux ? `import { Provider } from 'react-redux';
 import { store } from './store';` : ''}
 
 ReactDOM.createRoot(document.getElementById('root')${isTs ? '!' : ''}).render(
-  <React.StrictMode>
+  <StrictMode>
     ${hasRedux ? '<Provider store={store}><App /></Provider>' : '<App />'}
-  </React.StrictMode>
+  </StrictMode>
 );
 `;
 

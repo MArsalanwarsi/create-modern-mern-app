@@ -1,5 +1,4 @@
 import { spawn } from 'node:child_process';
-import path from 'node:path';
 
 /**
  * Executes npm install in a given directory safely across platforms.

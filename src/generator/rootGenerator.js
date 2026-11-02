@@ -13,13 +13,14 @@ export async function generateRoot(targetDir, projectName) {
       "dev": "concurrently -n \"CLIENT,SERVER\" -c \"cyan,green\" \"npm run dev:client\" \"npm run dev:server\"",
       "dev:client": "npm --prefix client run dev",
       "dev:server": "npm --prefix server run dev",
+      "lint": "npm --prefix client run lint && npm --prefix server run lint",
       "build:client": "npm --prefix client run build",
       "build:server": "npm --prefix server run build",
       "build": "npm run build:client && npm run build:server",
       "install:all": "npm install && npm --prefix client install && npm --prefix server install"
     },
     devDependencies: {
-      "concurrently": "^9.1.0"
+      "concurrently": "^10.0.6"
     }
   };
 
@@ -93,11 +94,12 @@ ${projectName}/
 
 ## Getting Started
 
+Use Node.js 24.16 or newer. Run \`npm run lint\` from the project root to check both applications with Oxlint.
+
 ### 1. Configure Backend Environment
 Copy the sample environment file in the \`server\` directory:
 \`\`\`bash
-cd server
-cp .env.example .env
+cp server/.env.example server/.env
 \`\`\`
 Update \`MONGO_URI\` with your MongoDB connection string (or use the local default).
 

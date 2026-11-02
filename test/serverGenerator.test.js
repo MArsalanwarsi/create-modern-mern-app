@@ -55,6 +55,11 @@ describe('serverGenerator', () => {
     assert.ok(fs.existsSync(path.join(tsDir, 'src/config/db.ts')));
     assert.ok(fs.existsSync(path.join(tsDir, 'tsconfig.json')));
 
+    // Check imports under NodeNext have .js extensions
+    const indexTs = fs.readFileSync(path.join(tsDir, 'src/index.ts'), 'utf8');
+    assert.ok(indexTs.includes("from './config/db.js'"));
+    assert.ok(indexTs.includes("from './routes/api.routes.js'"));
+
     const pkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf8'));
     assert.ok(pkg.devDependencies['tsx']);
     assert.ok(pkg.devDependencies['typescript']);

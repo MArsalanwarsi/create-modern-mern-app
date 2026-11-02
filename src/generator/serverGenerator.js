@@ -5,7 +5,7 @@ export async function generateServer(targetDir, options) {
   const { projectName = 'server', language = 'js', addOns = [] } = options;
   const isTs = language === 'ts';
   const ext = isTs ? 'ts' : 'js';
-  const importExt = isTs ? '' : '.js';
+  const importExt = '.js';
 
   const hasCors = addOns.includes('cors');
   const hasMulter = addOns.includes('multer');

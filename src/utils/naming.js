@@ -6,25 +6,42 @@ import path from 'node:path';
  * Validates npm package name rules: lowercase, url-friendly, no special characters except hyphen, dot, or scope.
  */
 export function sanitizePackageName(rawName) {
-  if (!rawName) return 'my-app';
+  if (!rawName) return 'mern-app';
   
-  const trimmed = rawName.trim();
+  let trimmed = rawName.trim();
   
+  // Handle current directory (.)
+  if (trimmed === '.') {
+    const cwdBase = path.basename(process.cwd());
+    return sanitizePackageName(cwdBase);
+  }
+
+  // Handle paths like ./my-app or /my-app
+  if (trimmed.includes('/') || trimmed.includes('\\')) {
+    if (!trimmed.startsWith('@')) {
+      trimmed = path.basename(trimmed);
+    }
+  }
+
   // Handle scoped packages like @scope/name
   if (trimmed.startsWith('@')) {
     const parts = trimmed.split('/');
     if (parts.length === 2) {
       const scope = parts[0].slice(1).toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      const name = parts[1].toLowerCase().replace(/[^a-z0-9.-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-      return `@${scope}/${name}`;
+      const name = parts[1].toLowerCase().replace(/[^a-z0-9.-]/g, '-').replace(/-+/g, '-').replace(/^[.-]+|[.-]+$/g, '');
+      if (scope && name) {
+        return `@${scope}/${name}`;
+      }
     }
   }
 
-  return trimmed
+  const sanitized = trimmed
     .toLowerCase()
     .replace(/[^a-z0-9.-]/g, '-')
     .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+    .replace(/^[.-]+|[.-]+$/g, '');
+
+  return sanitized || 'mern-app';
 }
 
 /**

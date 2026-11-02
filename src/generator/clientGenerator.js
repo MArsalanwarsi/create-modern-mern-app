@@ -93,8 +93,7 @@ export async function generateClient(targetDir, options) {
 
   // 3. vite.config.js / ts
   const compilerBabelConfig = isCompiler
-    ? `,
-      babel: {
+    ? `babel: {
         plugins: [['babel-plugin-react-compiler']]
       }`
     : '';
@@ -106,8 +105,7 @@ ${hasShadcn ? "import path from 'node:path';" : ''}
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react({${compilerBabelConfig}
-    })
+    react(${compilerBabelConfig ? `{\n      ${compilerBabelConfig}\n    }` : ''})
   ],
   server: {
     port: 3000
@@ -202,7 +200,7 @@ export function cn(...inputs) {
 
     // Add sample Shadcn Button
     files[`src/components/ui/button.${ext}`] = `import React from 'react';
-import { cn } from '../../lib/utils.${scriptExt === 'ts' ? '' : 'js'}';
+import { cn } from '../../lib/utils';
 
 export function Button({ className, children, ...props }${isTs ? ': React.ButtonHTMLAttributes<HTMLButtonElement>' : ''}) {
   return (
@@ -281,7 +279,7 @@ export default counterSlice.reducer;
 `;
 
     files[`src/store/index.${scriptExt}`] = `import { configureStore } from '@reduxjs/toolkit';
-import counterReducer from './slices/counterSlice.${scriptExt === 'ts' ? '' : 'js'}';
+import counterReducer from './slices/counterSlice';
 
 export const store = configureStore({
   reducer: {

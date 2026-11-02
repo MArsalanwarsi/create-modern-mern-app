@@ -22,7 +22,10 @@ export async function runCli(argv = process.argv) {
       placeholder: 'my-mern-app',
       defaultValue: 'my-mern-app',
       validate: (value) => {
-        if (!value.trim()) return 'Project name cannot be empty.';
+        const trimmed = value.trim();
+        if (!trimmed) return 'Project name cannot be empty.';
+        const dirCheck = validateTargetDir(path.resolve(process.cwd(), trimmed));
+        if (!dirCheck.valid) return dirCheck.error;
       }
     });
 

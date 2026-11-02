@@ -7,6 +7,9 @@ describe('naming utilities', () => {
     assert.strictEqual(sanitizePackageName('My Fullstack App'), 'my-fullstack-app');
     assert.strictEqual(sanitizePackageName('@scope/my-app'), '@scope/my-app');
     assert.strictEqual(sanitizePackageName('special__#chars!'), 'special-chars');
+    assert.strictEqual(sanitizePackageName('.'), 'complete-npm-package');
+    assert.strictEqual(sanitizePackageName('./app'), 'app');
+    assert.strictEqual(sanitizePackageName('???'), 'mern-app');
   });
 
   it('validates directory existence', () => {

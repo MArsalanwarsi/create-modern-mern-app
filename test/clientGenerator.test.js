@@ -36,6 +36,11 @@ describe('clientGenerator', () => {
     assert.ok(pkg.dependencies['@reduxjs/toolkit']);
     assert.ok(pkg.dependencies['react-toastify']);
     assert.ok(pkg.devDependencies['tailwindcss']);
+
+    // Check store import in TS
+    const storeContent = fs.readFileSync(path.join(testDir, 'src/store/index.ts'), 'utf8');
+    assert.ok(!storeContent.includes("counterSlice.'"));
+    assert.ok(storeContent.includes("counterSlice'"));
   });
 
   it('scaffolds javascript variant correctly', async () => {
@@ -53,7 +58,29 @@ describe('clientGenerator', () => {
     assert.ok(fs.existsSync(path.join(jsDir, 'components.json')));
     assert.ok(fs.existsSync(path.join(jsDir, 'src/lib/utils.js')));
 
+    // Check vite.config has no leading comma syntax error
+    const viteConfig = fs.readFileSync(path.join(jsDir, 'vite.config.js'), 'utf8');
+    assert.ok(!viteConfig.includes('react({,'));
+
     const pkg = JSON.parse(fs.readFileSync(path.join(jsDir, 'package.json'), 'utf8'));
     assert.ok(pkg.devDependencies['babel-plugin-react-compiler']);
+  });
+
+  it('scaffolds typescript with shadcn without trailing dot import in button.tsx', async () => {
+    const tsShadcnDir = path.join(testDir, 'ts-shadcn-client');
+    fs.mkdirSync(tsShadcnDir, { recursive: true });
+
+    await generateClient(tsShadcnDir, {
+      projectName: 'test-ts-shadcn',
+      variant: 'ts-compiler',
+      packages: ['shadcn']
+    });
+
+    const buttonContent = fs.readFileSync(path.join(tsShadcnDir, 'src/components/ui/button.tsx'), 'utf8');
+    assert.ok(!buttonContent.includes("utils.'"));
+    assert.ok(buttonContent.includes("utils'"));
+
+    const viteConfig = fs.readFileSync(path.join(tsShadcnDir, 'vite.config.ts'), 'utf8');
+    assert.ok(!viteConfig.includes('react({,'));
   });
 });

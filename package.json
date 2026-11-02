@@ -1,10 +1,10 @@
 {
-  "name": "create-fullstack-mern",
+  "name": "create-modern-mern-app",
   "version": "1.0.0",
   "description": "Interactive CLI generator for production-ready MERN stack apps with Vite, React, Express, and MongoDB",
   "type": "module",
   "bin": {
-    "create-fullstack-mern": "./bin/index.js"
+    "create-modern-mern-app": "./bin/index.js"
   },
   "main": "./src/cli.js",
   "files": [

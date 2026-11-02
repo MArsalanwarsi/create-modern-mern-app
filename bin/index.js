@@ -6,7 +6,7 @@ const args = process.argv.slice(2);
 
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`
-Usage: create-fullstack-mern [project-name]
+Usage: create-modern-mern-app [project-name]
 
 Options:
   -v, --version    Output the current version
@@ -16,7 +16,7 @@ Options:
 }
 
 if (args.includes('--version') || args.includes('-v')) {
-  console.log('create-fullstack-mern v1.0.0');
+  console.log('create-modern-mern-app v1.0.0');
   process.exit(0);
 }
 

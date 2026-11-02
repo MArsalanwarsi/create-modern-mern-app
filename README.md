@@ -1,4 +1,4 @@
-# create-fullstack-mern
+# create-modern-mern-app
 
 An interactive CLI tool to generate production-ready **MERN (MongoDB, Express, React, Node.js)** full-stack applications with sliced layouts, Vite React frontend variants, and modern Express architecture.
 
@@ -7,13 +7,13 @@ An interactive CLI tool to generate production-ready **MERN (MongoDB, Express, R
 You can run this generator directly with `npx`:
 
 ```bash
-npx create-fullstack-mern
+npx create-modern-mern-app
 ```
 
 Or pass a project name directly:
 
 ```bash
-npx create-fullstack-mern my-app
+npx create-modern-mern-app my-app
 ```
 
 ---

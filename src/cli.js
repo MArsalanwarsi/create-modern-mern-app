@@ -10,7 +10,7 @@ import { runInstall } from './generator/installer.js';
 
 export async function runCli(argv = process.argv) {
   console.clear();
-  p.intro(pc.bgCyan(pc.black(' create-fullstack-mern ')));
+  p.intro(pc.bgCyan(pc.black(' create-modern-mern-app ')));
 
   // 1. Project name
   const rawArgName = argv.slice(2).find(arg => !arg.startsWith('-'));

@@ -20,7 +20,7 @@ export async function writeFileTree(targetDir, files) {
   for (const [relativePath, content] of Object.entries(files)) {
     const fullPath = path.join(targetDir, relativePath);
     ensureDir(path.dirname(fullPath));
-    fs.writeFileSync(fullPath, content, 'utf8');
+    fs.writeFileSync(fullPath, content, { encoding: 'utf8', flag: 'wx', mode: relativePath === '.env' ? 0o600 : 0o666 });
   }
 }
 

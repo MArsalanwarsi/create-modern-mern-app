@@ -1,3 +1,4 @@
+import pkg from '../package.json' with { type: 'json' };
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
 import path from 'node:path';
@@ -9,20 +10,32 @@ import { generateRoot } from './generator/rootGenerator.js';
 import { runInstall } from './generator/installer.js';
 
 export async function runCli(argv = process.argv) {
-  console.clear();
-  p.intro(pc.bgCyan(pc.black(' create-modern-mern-app ')));
-
-  // 1. Project name
   const rawArgName = argv.slice(2).find(arg => !arg.startsWith('-'));
+  const total = rawArgName ? 5 : 6;
+  let step = 0;
+  function question(section, title) {
+    const position = String(++step).padStart(2, '0') + ' / 0' + total;
+    return pc.bgCyan(pc.black(` ${position} `)) + '  ' + pc.cyan(section) + '  ' + pc.bold(title);
+  }
+
+  const compact = (process.stdout.columns ?? 80) < 54;
+  const logo = compact ? '' : pc.cyan('  /\\    ');
+  const banner = [
+    logo + pc.bold('MODERN MERN'),
+    (compact ? '' : pc.cyan(' /__\\   ')) + pc.dim('Full-stack workspace builder'),
+    '',
+    compact ? 'React + Express + MongoDB' : 'React + shadcn/ui    /    Express + MongoDB'
+  ].join('\n');
+  p.box(banner, pc.cyan(`CREATE  /  v${pkg.version}`), { formatBorder: pc.cyan });
   let projectName = rawArgName;
 
   if (!projectName) {
     const namePrompt = await p.text({
-      message: 'What is your project name?',
+      message: question('Workspace', 'Name your project'),
       placeholder: 'my-mern-app',
       defaultValue: 'my-mern-app',
       validate: (value) => {
-        const trimmed = value.trim();
+        const trimmed = (value ?? '').trim();
         if (!trimmed) return 'Project name cannot be empty.';
         const dirCheck = validateTargetDir(path.resolve(process.cwd(), trimmed));
         if (!dirCheck.valid) return dirCheck.error;
@@ -47,7 +60,7 @@ export async function runCli(argv = process.argv) {
 
   // 2. Frontend variant
   const variant = await p.select({
-    message: 'Select a frontend variant:',
+    message: question('Client', 'Choose a React starter'),
     options: [
       { value: 'js', label: 'JavaScript', hint: 'Fast Vite + React' },
       { value: 'js-compiler', label: 'JavaScript + React Compiler', hint: 'React 19 Compiler memoization' },
@@ -63,15 +76,13 @@ export async function runCli(argv = process.argv) {
 
   // 3. Frontend packages
   const clientPackages = await p.multiselect({
-    message: 'Select additional frontend packages (React Router DOM included by default):',
+    message: question('Client', 'Add client libraries'),
     options: [
-      { value: 'tailwind', label: 'Tailwind CSS', hint: 'Utility-first styling' },
-      { value: 'shadcn', label: 'Shadcn UI', hint: 'Component primitives (includes Tailwind)' },
       { value: 'redux', label: 'Redux Toolkit', hint: 'Predictable state management' },
       { value: 'toastify', label: 'React-Toastify', hint: 'Rich toast notifications' }
     ],
     required: false,
-    initialValues: ['tailwind', 'toastify']
+    initialValues: ['toastify']
   });
 
   if (p.isCancel(clientPackages)) {
@@ -81,9 +92,9 @@ export async function runCli(argv = process.argv) {
 
   // 4. Backend language
   const backendLang = await p.select({
-    message: 'Select backend language:',
+    message: question('Server', 'Choose a language'),
     options: [
-      { value: 'js', label: 'JavaScript (Modern ES Modules)', hint: 'Native Node.js import/export' },
+      { value: 'js', label: 'JavaScript', hint: 'Native Node.js import/export' },
       { value: 'ts', label: 'TypeScript', hint: 'Node with tsx runner & full typings' }
     ]
   });
@@ -95,10 +106,10 @@ export async function runCli(argv = process.argv) {
 
   // 5. Backend add-ons
   const serverAddOns = await p.multiselect({
-    message: 'Select backend add-ons (Express + MongoDB included):',
+    message: question('Server', 'Add integrations'),
     options: [
       { value: 'cors', label: 'CORS', hint: 'Cross-Origin Resource Sharing' },
-      { value: 'dotenv', label: 'dotenv', hint: 'Environment variables' },
+      { value: 'dotenv', label: 'dotenv', hint: 'Load configuration from .env' },
       { value: 'multer', label: 'Multer', hint: 'File upload handling' },
       { value: 'cloudinary', label: 'Cloudinary', hint: 'Cloud media storage' },
       { value: 'nodemailer', label: 'Nodemailer', hint: 'Email service' }
@@ -114,7 +125,9 @@ export async function runCli(argv = process.argv) {
 
   // 6. Install dependencies prompt
   const shouldInstall = await p.confirm({
-    message: 'Would you like to install dependencies now?',
+    message: question('Install', 'Install packages now?'),
+    active: 'Install now',
+    inactive: 'Scaffold only',
     initialValue: true
   });
 
@@ -122,6 +135,15 @@ export async function runCli(argv = process.argv) {
     p.cancel('Operation cancelled.');
     process.exit(0);
   }
+
+  const additions = [...clientPackages, ...serverAddOns];
+  p.note([
+    pc.bold(projectName),
+    '',
+    `Client   ${variant.startsWith('ts') ? 'TypeScript' : 'JavaScript'}${variant.includes('compiler') ? ' + React Compiler' : ''} · shadcn/ui`,
+    `Server   ${backendLang === 'ts' ? 'TypeScript' : 'JavaScript'} · Express · JWT auth`,
+    `Extras   ${additions.join(', ') || 'None'}`
+  ].join('\n'), pc.cyan('Your workspace'));
 
   // 7. Scaffolding execution
   const s = p.spinner();
@@ -153,27 +175,21 @@ export async function runCli(argv = process.argv) {
   if (shouldInstall) {
     p.log.info(pc.cyan('Installing dependencies in root, client, and server...'));
     
-    // Install root
-    const rootRes = await runInstall(targetDir);
-    // Install client
-    const clientRes = await runInstall(clientDir);
-    // Install server
-    const serverRes = await runInstall(serverDir);
-
-    if (rootRes.success && clientRes.success && serverRes.success) {
+    const result = await runInstall(targetDir);
+    if (result.success) {
       p.log.success(pc.green('All dependencies installed successfully!'));
     } else {
-      p.log.warn(pc.yellow('Automatic installation encountered an issue. You can run "npm run install:all" manually.'));
+      process.exitCode = 1;
+      p.outro(pc.yellow(`Installation failed: ${result.error}. From the generated root, run npm install to retry.`));
+      return;
     }
   }
 
-  // 9. Outro & Next Steps
-  p.outro(pc.bold(pc.cyan('Next steps:')));
-  console.log(`
-  ${pc.bold(`cd ${projectName}`)}
-  ${!shouldInstall ? `${pc.bold('npm run install:all')}\n  ` : ''}${pc.bold('npm run dev')}
-  
-  Frontend: ${pc.underline(pc.blue('http://localhost:3000'))}
-  Backend:  ${pc.underline(pc.green('http://localhost:5000'))}
-  `);
+  const commands = [
+    ...(projectName === '.' ? [] : [`cd "${projectName}"`]),
+    ...(shouldInstall ? [] : ['npm install']),
+    'npm run dev'
+  ];
+  p.note(commands.map(command => pc.bold(command)).join('\n'), pc.green('Start developing'));
+  p.outro(`${pc.green('Workspace ready')}  ${pc.dim('·')}  http://localhost:3000`);
 }

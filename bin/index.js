@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import pkg from '../package.json' with { type: 'json' };
 import { runCli } from '../src/cli.js';
 
 const args = process.argv.slice(2);
@@ -16,7 +17,7 @@ Options:
 }
 
 if (args.includes('--version') || args.includes('-v')) {
-  console.log('create-modern-mern-app v1.0.0');
+  console.log(`create-modern-mern-app v${pkg.version}`);
   process.exit(0);
 }
 

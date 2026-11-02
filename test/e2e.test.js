@@ -64,7 +64,7 @@ describe('end-to-end fullstack scaffolding', () => {
     assert.ok(fs.existsSync(path.join(serverDir, 'src/middlewares/multer.ts')));
     assert.ok(fs.existsSync(path.join(serverDir, 'src/middlewares/errorHandler.ts')));
     assert.ok(fs.existsSync(path.join(serverDir, 'src/utils/nodemailer.ts')));
-    assert.ok(fs.existsSync(path.join(serverDir, 'src/index.ts')));
+    assert.ok(fs.existsSync(path.join(serverDir, 'index.ts')));
     assert.ok(fs.existsSync(path.join(serverDir, '.env.example')));
     assert.ok(fs.existsSync(path.join(serverDir, 'tsconfig.json')));
 
@@ -73,6 +73,14 @@ describe('end-to-end fullstack scaffolding', () => {
     const clientPkg = JSON.parse(fs.readFileSync(path.join(clientDir, 'package.json'), 'utf8'));
     const serverPkg = JSON.parse(fs.readFileSync(path.join(serverDir, 'package.json'), 'utf8'));
 
+    assert.deepEqual(rootPkg.workspaces, ['client', 'server']);
+    assert.ok(clientPkg.dependencies.axios);
+    assert.ok(serverPkg.dependencies.bcryptjs && serverPkg.dependencies.jsonwebtoken);
+    assert.ok(fs.existsSync(path.join(clientDir, 'src/api/client.ts')));
+    assert.ok(fs.existsSync(path.join(clientDir, 'src/components/auth/AuthForm.tsx')));
+    assert.ok(fs.existsSync(path.join(serverDir, 'src/middlewares/requireToken.ts')));
+    assert.ok(fs.existsSync(path.join(serverDir, 'src/middlewares/requireRole.ts')));
+    assert.match(fs.readFileSync(path.join(serverDir, '.env'), 'utf8'), /^JWT_SECRET=[0-9a-f]{96}$/m);
     assert.strictEqual(rootPkg.name, 'fullstack-demo');
     assert.strictEqual(clientPkg.name, 'fullstack-demo-client');
     assert.strictEqual(serverPkg.name, 'fullstack-demo-server');

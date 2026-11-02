@@ -52,6 +52,9 @@ export function validateTargetDir(targetPath) {
     return { valid: true, exists: false, isEmpty: true };
   }
 
+  if (!fs.statSync(targetPath).isDirectory()) {
+    return { valid: false, exists: true, isEmpty: false, error: 'Target path is an existing file.' };
+  }
   const files = fs.readdirSync(targetPath);
   // Ignore .git or system files if present
   const validFiles = files.filter(f => f !== '.git' && f !== '.DS_Store' && f !== 'Thumbs.db');

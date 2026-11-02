@@ -26,7 +26,7 @@ describe('serverGenerator', () => {
     assert.ok(fs.existsSync(path.join(testDir, 'src/routes/api.routes.js')));
     assert.ok(fs.existsSync(path.join(testDir, 'src/middlewares/multer.js')));
     assert.ok(fs.existsSync(path.join(testDir, 'src/utils/nodemailer.js')));
-    assert.ok(fs.existsSync(path.join(testDir, 'src/index.js')));
+    assert.ok(fs.existsSync(path.join(testDir, 'index.js')));
     assert.ok(fs.existsSync(path.join(testDir, '.env.example')));
 
     // Check package.json dependencies
@@ -51,14 +51,14 @@ describe('serverGenerator', () => {
       addOns: ['cors']
     });
 
-    assert.ok(fs.existsSync(path.join(tsDir, 'src/index.ts')));
+    assert.ok(fs.existsSync(path.join(tsDir, 'index.ts')));
     assert.ok(fs.existsSync(path.join(tsDir, 'src/config/db.ts')));
     assert.ok(fs.existsSync(path.join(tsDir, 'tsconfig.json')));
 
     // Check imports under NodeNext have .js extensions
-    const indexTs = fs.readFileSync(path.join(tsDir, 'src/index.ts'), 'utf8');
-    assert.ok(indexTs.includes("from './config/db.js'"));
-    assert.ok(indexTs.includes("from './routes/api.routes.js'"));
+    const indexTs = fs.readFileSync(path.join(tsDir, 'index.ts'), 'utf8');
+    assert.ok(indexTs.includes("from './src/config/db.js'"));
+    assert.ok(indexTs.includes("from './src/routes/api.routes.js'"));
 
     const pkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf8'));
     assert.ok(pkg.devDependencies['tsx']);

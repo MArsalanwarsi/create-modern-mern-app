@@ -1,15 +1,16 @@
+import { addShadcn } from './shadcn.js';
+import { addAuthClient } from './authClient.js';
 import { writeFileTree } from '../utils/fs-helpers.js';
 import { sanitizePackageName } from '../utils/naming.js';
 
 export async function generateClient(targetDir, options) {
-  const { projectName = 'client', variant = 'js', packages = [] } = options;
+  const { projectName: rawName = 'client', variant = 'js', packages = [] } = options;
+  const projectName = sanitizePackageName(rawName);
   const isTs = variant.startsWith('ts');
   const isCompiler = variant.includes('compiler');
   const ext = isTs ? 'tsx' : 'jsx';
   const scriptExt = isTs ? 'ts' : 'js';
 
-  const hasTailwind = packages.includes('tailwind') || packages.includes('shadcn');
-  const hasShadcn = packages.includes('shadcn');
   const hasRedux = packages.includes('redux');
   const hasToastify = packages.includes('toastify');
 
@@ -17,6 +18,11 @@ export async function generateClient(targetDir, options) {
 
   // 1. package.json dependencies
   const dependencies = {
+    clsx: '^2.1.1',
+    'class-variance-authority': '^0.7.1',
+    'tailwind-merge': '^3.7.0',
+    'lucide-react': '^1.66.0',
+    axios: '^1.21.0',
     react: '^19.3.1',
     'react-dom': '^19.3.1',
     'react-router-dom': '^7.18.5'
@@ -24,6 +30,8 @@ export async function generateClient(targetDir, options) {
 
   const devDependencies = {
     '@vitejs/plugin-react': '^6.2.1',
+    tailwindcss: '^4.3.3',
+    '@tailwindcss/vite': '^4.3.3',
     oxlint: '^1.90.0',
     vite: '^8.3.5'
   };
@@ -40,18 +48,6 @@ export async function generateClient(targetDir, options) {
     devDependencies['@types/react-dom'] = '^19.3.0';
   }
 
-  if (hasTailwind) {
-    devDependencies['tailwindcss'] = '^4.3.3';
-    devDependencies['@tailwindcss/vite'] = '^4.3.3';
-  }
-
-  if (hasShadcn) {
-    dependencies['clsx'] = '^2.1.1';
-    dependencies['tailwind-merge'] = '^3.7.0';
-    dependencies['lucide-react'] = '^1.66.0';
-    dependencies['class-variance-authority'] = '^0.7.1';
-  }
-
   if (hasRedux) {
     dependencies['@reduxjs/toolkit'] = '^2.13.0';
     dependencies['react-redux'] = '^9.3.1';
@@ -62,7 +58,7 @@ export async function generateClient(targetDir, options) {
   }
 
   const clientPkg = {
-    name: sanitizePackageName(projectName) + '-client',
+    name: projectName + '-client',
     private: true,
     version: '0.0.0',
     type: 'module',
@@ -75,8 +71,6 @@ export async function generateClient(targetDir, options) {
     dependencies,
     devDependencies
   };
-
-  files['package.json'] = JSON.stringify(clientPkg, null, 2);
 
   // 2. index.html
   files['index.html'] = `<!doctype html>
@@ -97,23 +91,24 @@ export async function generateClient(targetDir, options) {
   files[`vite.config.${scriptExt}`] = `import { defineConfig } from 'vite';
 import react${isCompiler ? ', { reactCompilerPreset }' : ''} from '@vitejs/plugin-react';
 ${isCompiler ? "import babel from '@rolldown/plugin-babel';" : ''}
-${hasTailwind ? "import tailwindcss from '@tailwindcss/vite';" : ''}
-${hasShadcn ? "import path from 'node:path';" : ''}
+import tailwindcss from '@tailwindcss/vite';
+import path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react()${isCompiler ? ',\n    babel({ presets: [reactCompilerPreset()] })' : ''}${hasTailwind ? ',\n    tailwindcss()' : ''}
+    react()${isCompiler ? ',\n    babel({ presets: [reactCompilerPreset()] })' : ''},
+    tailwindcss()
   ],
   server: {
     proxy: { '/api': 'http://localhost:5000' },
     port: 3000
-  }${hasShadcn ? `,
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src')
     }
-  }` : ''}
+  }
 });
 `;
 
@@ -137,19 +132,18 @@ export default defineConfig({
         noUnusedLocals: true,
         noUnusedParameters: true,
         noFallthroughCasesInSwitch: true,
-        ...(hasShadcn ? {
-          paths: {
+        paths: {
             "@/*": ["./src/*"]
           }
-        } : {})
       },
       include: ["src"]
     }, null, 2);
   }
 
+  if (!isTs) files['jsconfig.json'] = JSON.stringify({ compilerOptions: { paths: { '@/*': ['./src/*'] } } }, null, 2);
+
   // 5. Tailwind & Shadcn configs
-  if (hasShadcn) {
-    files['components.json'] = JSON.stringify({
+  files['components.json'] = JSON.stringify({
       "$schema": "https://ui.shadcn.com/schema.json",
       "style": "new-york",
       "rsc": false,
@@ -174,25 +168,6 @@ export function cn(...inputs${isTs ? ': import("clsx").ClassValue[]' : ''}) {
 }
 `;
 
-    // Add sample Shadcn Button
-    files[`src/components/ui/button.${ext}`] = `import { cn } from '../../lib/utils';
-
-export function Button({ className, children, ...props }${isTs ? ': React.ButtonHTMLAttributes<HTMLButtonElement>' : ''}) {
-  return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-blue-600 text-white hover:bg-blue-700 h-10 py-2 px-4 shadow",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-}
-`;
-  }
-
   // 5b. Shared components in src/components/
   files[`src/components/Card.${ext}`] = `
 export function Card({ title, children }${isTs ? ': { title?: string; children: React.ReactNode }' : ''}) {
@@ -206,13 +181,10 @@ export function Card({ title, children }${isTs ? ': { title?: string; children: 
 `;
 
   // 6. index.css
-  let indexCss = '';
-  if (hasTailwind) {
-    indexCss += `@import "tailwindcss";
+  files['src/index.css'] = `@import "tailwindcss";
+@import "./styles/shadcn.css";
 
-`;
-  }
-  indexCss += `body {
+body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -220,7 +192,6 @@ export function Card({ title, children }${isTs ? ': { title?: string; children: 
   color: #0f172a;
 }
 `;
-  files['src/index.css'] = indexCss;
 
   // 7. Redux Toolkit Store & Slice if selected
   if (hasRedux) {
@@ -294,34 +265,6 @@ export function Footer() {
 }
 `;
 
-  files[`src/layout/slices/Sidebar.${ext}`] = `import { Link } from 'react-router-dom';
-
-export function Sidebar() {
-  return (
-    <aside style={{ width: '240px', background: '#0f172a', color: '#f8fafc', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <h3 style={{ margin: '0 0 1rem 0', color: '#38bdf8' }}>Dashboard</h3>
-      <Link to="/dashboard" style={{ color: '#cbd5e1', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>Overview</Link>
-      <Link to="/dashboard/settings" style={{ color: '#cbd5e1', textDecoration: 'none', padding: '0.5rem', borderRadius: '4px' }}>Settings</Link>
-      <div style={{ marginTop: 'auto', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-        <Link to="/" style={{ color: '#94a3b8', textDecoration: 'none' }}>← Back to Website</Link>
-      </div>
-    </aside>
-  );
-}
-`;
-
-  files[`src/layout/slices/Header.${ext}`] = `
-export function Header() {
-  return (
-    <header style={{ height: '60px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem' }}>
-      <span style={{ fontWeight: 600, color: '#334155' }}>Admin Portal</span>
-      <span style={{ fontSize: '0.875rem', color: '#64748b' }}>Connected to Express + MongoDB</span>
-    </header>
-  );
-}
-`;
-
-  // 9. Parent Layouts in src/layout/
   files[`src/layout/WebsiteLayout.${ext}`] = `import { Outlet } from 'react-router-dom';
 import { Navbar } from './slices/Navbar';
 import { Footer } from './slices/Footer';
@@ -339,32 +282,24 @@ export function WebsiteLayout() {
 }
 `;
 
-  files[`src/layout/DashboardLayout.${ext}`] = `import { Outlet } from 'react-router-dom';
-import { Sidebar } from './slices/Sidebar';
-import { Header } from './slices/Header';
-
-export function DashboardLayout() {
-  return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <Header />
-        <main style={{ flex: 1, padding: '2rem', background: '#f8fafc' }}>
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-}
-`;
-
   // 10. Website Pages in src/pages/website/
   files[`src/pages/website/Home.${ext}`] = `${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
 import { increment, decrement } from '../../store/slices/counterSlice';` : ''}
 ${hasToastify ? `import { toast } from 'react-toastify';` : ''}
-${hasShadcn ? `import { Button } from '../../components/ui/button';` : ''}
+import { Button } from '../../components/ui/button';
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { api, errorMessage } from '../../api/client';
 
 export function Home() {
+  const [health, setHealth] = useState('Ready to test');
+  const [checking, setChecking] = useState(false);
+  async function checkHealth() {
+    setChecking(true);
+    try { const { data } = await api.get('/health'); setHealth(data.message); }
+    catch (err) { setHealth(errorMessage(err)); }
+    finally { setChecking(false); }
+  }
   ${hasRedux ? `const count = useSelector((state${isTs ? ': any' : ''}) => state.counter.value);
   const dispatch = useDispatch();` : ''}
 
@@ -395,10 +330,14 @@ export function Home() {
         </div>
       </div>` : ''}
 
-      ${hasShadcn ? `
-      <div style={{ marginTop: '2rem' }}>
-        <Button onClick={() => alert('Shadcn Button clicked!')}>Shadcn UI Button</Button>
-      </div>` : ''}
+      <section className="my-8 rounded-xl border bg-card p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-widest">Connection lab</p>
+        <h2 className="my-3 text-2xl font-semibold">Test the full stack</h2>
+        <p className="mb-4">Send a request through Axios to your Express health endpoint.</p>
+        <Button disabled={checking} onClick={checkHealth}>{checking ? 'Checking…' : 'Check API health'}</Button>
+        <p role="status" className="mt-3">{health}</p>
+      </section>
+      <div className="flex flex-wrap gap-5 font-medium underline"><Link to="/signup">Create an account</Link><Link to="/login">Sign in</Link><Link to="/dashboard">Open dashboard</Link></div>
     </div>
   );
 }
@@ -431,30 +370,6 @@ export function Contact() {
 `;
 
   // 11. Dashboard Pages in src/pages/dashboard/
-  files[`src/pages/dashboard/Overview.${ext}`] = `import { useEffect, useState } from 'react';
-
-export function Overview() {
-  const [serverStatus, setServerStatus] = useState('Checking...');
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then(res => res.json())
-      .then(data => setServerStatus(data.message || 'Connected'))
-      .catch(() => setServerStatus('Backend server is not running on port 5000'));
-  }, []);
-
-  return (
-    <div>
-      <h2>Dashboard Overview</h2>
-      <p style={{ color: '#475569' }}>Welcome to the admin dashboard, nested inside <code>DashboardLayout</code>.</p>
-      <div style={{ padding: '1rem', background: '#fff', borderRadius: '6px', border: '1px solid #e2e8f0', marginTop: '1rem' }}>
-        <strong>Backend API Status:</strong> <span style={{ color: serverStatus.includes('not') ? '#ef4444' : '#10b981' }}>{serverStatus}</span>
-      </div>
-    </div>
-  );
-}
-`;
-
   files[`src/pages/dashboard/Settings.${ext}`] = `
 export function Settings() {
   return (
@@ -469,7 +384,8 @@ export function Settings() {
   // 12. App.{jsx,tsx} with React Router DOM routes
   files[`src/App.${ext}`] = `import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WebsiteLayout } from './layout/WebsiteLayout';
-import { DashboardLayout } from './layout/DashboardLayout';
+import { AuthenticatedDashboard } from './layout/AuthenticatedDashboard';
+import { Account } from './pages/auth/Account';
 import { Home } from './pages/website/Home';
 import { About } from './pages/website/About';
 import { Contact } from './pages/website/Contact';
@@ -491,7 +407,9 @@ export default function App() {
         </Route>
 
         {/* Dashboard Admin Routes */}
-        <Route path="/dashboard" element={<DashboardLayout />}>
+        <Route path="/login" element={<Account key="login" mode="login" />} />
+        <Route path="/signup" element={<Account key="signup" mode="signup" />} />
+        <Route path="/dashboard" element={<AuthenticatedDashboard />}>
           <Route index element={<Overview />} />
           <Route path="settings" element={<Settings />} />
         </Route>
@@ -516,5 +434,10 @@ ReactDOM.createRoot(document.getElementById('root')${isTs ? '!' : ''}).render(
 );
 `;
 
+  addAuthClient(files, isTs);
+  const registry = await addShadcn(files, { isTs });
+  Object.assign(dependencies, registry.dependencies);
+  Object.assign(devDependencies, registry.devDependencies);
+  files['package.json'] = JSON.stringify(clientPkg, null, 2);
   await writeFileTree(targetDir, files);
 }

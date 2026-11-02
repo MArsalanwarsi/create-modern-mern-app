@@ -1,5 +1,8 @@
 # Project Context & Architecture: `create-modern-mern-app`
 
+Current scaffold: the npm README and handbook/dist/index.html describe the authenticated workspace. shadcn/ui, Tailwind, Axios, login/signup, JWT cookies and role middleware are now built in. The server entry is at server/index.js or server/index.ts, and npm installs both workspaces from the root. The earlier design and release history below describes the original scaffold.
+
+
 > **Note for AI Models / Developers:**  
 > This document contains the complete context, architectural specifications, prompt flow, folder structures, and implementation history for the `create-modern-mern-app` CLI package.
 

@@ -1,0 +1,151 @@
+================================================================================
+PROJECT CONTEXT & ARCHITECTURE: create-modern-mern-app
+================================================================================
+
+1. PROJECT IDENTITY & METADATA
+--------------------------------------------------------------------------------
+- Package Name: create-modern-mern-app
+- Version: 1.0.0
+- npm URL: https://www.npmjs.com/package/create-modern-mern-app
+- GitHub URL: https://github.com/MArsalanwarsi/create-modern-mern-app
+- Author: Muhammad Arsalan Warsi
+- License: MIT
+- Execution Command: npx create-modern-mern-app@latest [project-name]
+- Alternative Command: npm create modern-mern-app@latest [project-name]
+- Node.js Runtime Requirement: >=18.11.0
+
+2. PROJECT PURPOSE
+--------------------------------------------------------------------------------
+create-modern-mern-app is an interactive CLI generator published to npm that 
+scaffolds full-stack MERN (MongoDB, Express, React, Node.js) applications in 
+seconds with production-ready architecture.
+
+Key Highlights:
+- Sliced layout architecture (Navbar, Sidebar, Footer, Header).
+- Public website pages (Home, About, Contact) and admin dashboard pages (Overview, Settings).
+- Full Vite React frontend with 4 variants (including React 19 Compiler).
+- Express + MongoDB backend with proper separation of concerns (models, controllers, 
+  routes, config, middlewares, utils) supporting native ES Modules or TypeScript.
+- Granular optional library selection (Tailwind, Shadcn UI, Redux Toolkit, Toastify, 
+  CORS, Multer, Cloudinary, Nodemailer) with zero dead code.
+
+3. INTERACTIVE CLI WIZARD STEPS
+--------------------------------------------------------------------------------
+1. Project Name:
+   - Validates non-empty input.
+   - Performs inline collision check (warns if target folder exists and is non-empty).
+   - Sanitizes name for npm rules (lowercased, valid characters).
+2. Frontend Variant:
+   - JavaScript
+   - JavaScript + React Compiler (React 19 memoization babel plugin)
+   - TypeScript
+   - TypeScript + React Compiler
+3. Frontend Packages (Multi-Select):
+   - Tailwind CSS
+   - Shadcn UI (components.json, utils, sample Button)
+   - Redux Toolkit (store, counter slice, Provider)
+   - React-Toastify (ToastContainer pre-mounted)
+   (Note: React Router DOM v7 is built-in as core to power nested layouts).
+4. Backend Language:
+   - JavaScript (Native Node.js ES Modules, node --watch)
+   - TypeScript (tsconfig.json, tsx watch runner, express types)
+5. Backend Add-ons (Multi-Select with Express + MongoDB/Mongoose core):
+   - CORS
+   - dotenv
+   - Multer (disk storage file uploads)
+   - Cloudinary (cloud asset storage)
+   - Nodemailer (SMTP email service)
+6. Dependency Installation:
+   - Option to auto-install dependencies in root, client, and server, or output manual commands.
+
+4. GENERATED PROJECT STRUCTURE
+--------------------------------------------------------------------------------
+<project-name>/
+├── client/                     # Vite + React Frontend
+│   ├── src/
+│   │   ├── components/         # Atomic UI components (Card, Button)
+│   │   │   └── ui/             # Shadcn primitives (if selected)
+│   │   ├── layout/             # Sliced layout architecture
+│   │   │   ├── slices/         # Sliced partials: Navbar, Sidebar, Footer, Header
+│   │   │   ├── WebsiteLayout   # Public layout wrapper (<Outlet />)
+│   │   │   └── DashboardLayout # Admin dashboard layout wrapper (<Outlet />)
+│   │   ├── pages/              # Application pages
+│   │   │   ├── website/        # Home, About, Contact
+│   │   │   └── dashboard/      # Overview, Settings
+│   │   ├── store/              # Redux Toolkit store & slices (if selected)
+│   │   ├── lib/                # Shadcn cn() helper (if selected)
+│   │   ├── App                 # Pre-wired React Router DOM nested routes
+│   │   ├── main                # React DOM root entry
+│   │   └── index.css           # Global CSS & Tailwind directives
+│   ├── index.html
+│   ├── package.json
+│   └── vite.config.js|ts
+│
+├── server/                     # Express + MongoDB Backend
+│   ├── src/
+│   │   ├── config/             # DB (db.js|ts) & Cloudinary config
+│   │   ├── controllers/        # Route controllers (api.controller.js|ts)
+│   │   ├── models/             # Mongoose schemas (user.model.js|ts)
+│   │   ├── routes/             # Express route definitions (api.routes.js|ts)
+│   │   ├── middlewares/        # Error handlers & Multer upload middleware
+│   │   ├── utils/              # Email delivery helpers (nodemailer.js|ts)
+│   │   └── index.js|ts         # Express server bootstrap & MongoDB connect
+│   ├── .env.example            # Pre-configured environment variable placeholders
+│   ├── package.json
+│   └── tsconfig.json           # (If TypeScript selected)
+│
+├── package.json                # Root concurrent scripts
+└── README.md                   # Full setup instructions
+
+5. ROOT SCRIPTS IN GENERATED APPS
+--------------------------------------------------------------------------------
+- npm run dev: Concurrently starts client (port 3000) and server (port 5000)
+- npm run dev:client: Starts Vite client dev server
+- npm run dev:server: Starts Express backend server with live reload
+- npm run build: Builds both frontend and backend for production
+- npm run install:all: Installs all dependencies across root, client, and server
+
+6. INTERNAL CLI CODEBASE STRUCTURE
+--------------------------------------------------------------------------------
+├── bin/
+│   └── index.js                # CLI executable entry point
+├── src/
+│   ├── cli.js                  # Wizard orchestration (@clack/prompts)
+│   ├── generator/
+│   │   ├── clientGenerator.js  # Frontend generator (variants, layouts, packages)
+│   │   ├── serverGenerator.js  # Backend generator (ESM vs TS, MongoDB, add-ons)
+│   │   ├── rootGenerator.js    # Root package.json, gitignore, and README
+│   │   └── installer.js        # Cross-platform child-process npm install runner
+│   └── utils/
+│       ├── naming.js           # Package name sanitization & directory validation
+│       └── fs-helpers.js       # Recursive directory & file writing helpers
+├── test/
+│   ├── clientGenerator.test.js # Client generator tests
+│   ├── serverGenerator.test.js # Server generator tests
+│   ├── rootGenerator.test.js   # Root generator tests
+│   ├── naming.test.js          # Naming & validation tests
+│   └── e2e.test.js             # End-to-end fullstack test
+├── package.json                # Package manifest with bin, files, engines
+└── README.md                   # Package documentation
+
+7. TEST SUITE & CODE QUALITY
+--------------------------------------------------------------------------------
+Run tests using Node.js built-in test runner:
+  npm test
+  (Runs: node --test test/*.test.js)
+Current status: 9 tests across 5 suites, 100% PASSING.
+
+8. HOW TO UPDATE AND PUBLISH TO NPM
+--------------------------------------------------------------------------------
+1. Make changes and verify with tests:
+   npm test
+
+2. Commit & Push to GitHub:
+   git add .
+   git commit -m "feat: your change"
+   git push origin main
+
+3. Bump version and publish:
+   npm version patch
+   npm publish
+   git push --tags origin main

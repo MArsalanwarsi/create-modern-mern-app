@@ -27,8 +27,16 @@
     "generator",
     "create-app"
   ],
-  "author": "",
+  "author": "Muhammad Arsalan Warsi",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MArsalanwarsi/create-modern-mern-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MArsalanwarsi/create-modern-mern-app/issues"
+  },
+  "homepage": "https://github.com/MArsalanwarsi/create-modern-mern-app#readme",
   "engines": {
     "node": ">=18.11.0"
   },

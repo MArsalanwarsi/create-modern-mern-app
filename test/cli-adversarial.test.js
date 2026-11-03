@@ -7,9 +7,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { TextPrompt, SelectPrompt, ConfirmPrompt, MultiSelectPrompt, CANCEL_SYMBOL } from '@clack/core';
 import { parseCliArgs, runCli } from '../src/cli.js';
-import { renderBanner, BANNER_BREAKPOINTS } from '../src/ui/banner.js';
-import { formatStepHeader, renderBox, stripAnsi, visibleWidth } from '../src/ui/theme.js';
-import { renderConfigSummary, renderCompletionCard } from '../src/ui/summary.js';
+import { renderBanner } from '../src/ui/banner.js';
+import { stripVTControlCharacters as stripAnsi } from 'node:util';
 import { sanitizePackageName, validateTargetDir } from '../src/utils/naming.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -84,83 +83,16 @@ describe('Adversarial: Terminal Geometry and Negative Columns', () => {
   });
   it('safely handles negative, zero, and NaN columns in banner rendering', () => {
     const negBanner = renderBanner(-10, { isTTY: true });
-    assert.ok(stripAnsi(negBanner).includes('MODERN MERN'));
+    assert.ok(stripAnsi(negBanner).includes('Modern MERN'));
 
     const zeroBanner = renderBanner(0, { isTTY: true });
-    assert.ok(stripAnsi(zeroBanner).includes('MODERN MERN'));
+    assert.ok(stripAnsi(zeroBanner).includes('Modern MERN'));
 
     const nanBanner = renderBanner(NaN, { isTTY: true });
-    assert.ok(stripAnsi(nanBanner).includes('MODERN MERN'));
+    assert.ok(stripAnsi(nanBanner).includes('Modern MERN'));
   });
 
-  it('accurately switches banners at exact boundary breakpoints', () => {
-    // Breakpoint < 54: Minimal
-    const belowCompact = renderBanner(BANNER_BREAKPOINTS.COMPACT - 1, { isTTY: true });
-    assert.ok(!stripAnsi(belowCompact).includes('==='), 'Minimal banner should not have robot visor');
 
-    // Breakpoint 54: Compact visor
-    const atCompact = renderBanner(BANNER_BREAKPOINTS.COMPACT, { isTTY: true });
-    assert.ok(stripAnsi(atCompact).includes('==='), 'Compact banner should have robot visor');
-    assert.ok(!stripAnsi(atCompact).includes('React 19 ·'), 'Compact banner should not have full subtitle');
-
-    // Breakpoint 67: Compact visor
-    const belowFull = renderBanner(BANNER_BREAKPOINTS.FULL - 1, { isTTY: true });
-    assert.ok(stripAnsi(belowFull).includes('==='), 'Below full should still be compact visor');
-    assert.ok(!stripAnsi(belowFull).includes('React 19 ·'), 'Below full should not have full subtitle');
-
-    // Breakpoint 68: Full 6-armed mascot
-    const atFull = renderBanner(BANNER_BREAKPOINTS.FULL, { isTTY: true });
-    assert.ok(stripAnsi(atFull).includes('(⚛) React') || stripAnsi(atFull).includes('(o) React'));
-    assert.ok(stripAnsi(atFull).includes('React 19 ·') || stripAnsi(atFull).includes('React 19'));
-  });
-
-  it('safely handles negative and zero columns in formatStepHeader', () => {
-    const negHeader = formatStepHeader(1, 6, 'STACK', 'Title', -10);
-    assert.ok(stripAnsi(negHeader).includes('1/6'));
-    assert.ok(stripAnsi(negHeader).includes('STACK'));
-
-    const zeroHeader = formatStepHeader(1, 6, 'STACK', 'Title', 0);
-    assert.ok(stripAnsi(zeroHeader).includes('1/6'));
-    assert.ok(stripAnsi(zeroHeader).includes('STACK'));
-  });
-
-  it('safely renders renderBox with negative or zero maxWidth without throwing RangeError', () => {
-    assert.doesNotThrow(() => {
-      const boxNeg = renderBox(['Line 1', 'Line 2'], { maxWidth: -10 });
-      assert.ok(boxNeg.includes('Line 1'));
-    });
-
-    assert.doesNotThrow(() => {
-      const boxZero = renderBox(['Line 1', 'Line 2'], { maxWidth: 0 });
-      assert.ok(boxZero.includes('Line 1'));
-    });
-  });
-
-  it('safely renders renderConfigSummary and renderCompletionCard with negative or zero columns', () => {
-    assert.doesNotThrow(() => {
-      const cardNeg = renderConfigSummary({ projectName: 'edge-test' }, { columns: -10 });
-      const cardZero = renderConfigSummary({ projectName: 'edge-test' }, { columns: 0 });
-      assert.ok(cardNeg.length > 0);
-      assert.ok(cardZero.length > 0);
-    });
-
-    assert.doesNotThrow(() => {
-      const compNeg = renderCompletionCard({ projectName: 'edge-test', columns: -10 });
-      const compZero = renderCompletionCard({ projectName: 'edge-test', columns: 0 });
-      assert.ok(compNeg.length > 0);
-      assert.ok(compZero.length > 0);
-    });
-  });
-
-  it('maintains strict row width uniformity even under extreme narrow terminal widths', () => {
-    const card = renderConfigSummary({ projectName: 'test-uniformity' }, { columns: 30 });
-    const lines = card.split('\n');
-    const widths = lines.map(line => visibleWidth(line));
-    const firstWidth = widths[0];
-    for (let i = 1; i < widths.length; i++) {
-      assert.strictEqual(widths[i], firstWidth, `Row ${i} width mismatch in narrow card`);
-    }
-  });
 });
 
 describe('Adversarial: Project Naming and Directory Collisions', () => {

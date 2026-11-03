@@ -10,8 +10,7 @@ import { generateRoot } from './generator/rootGenerator.js';
 import { runInstall } from './generator/installer.js';
 
 import { renderBanner } from './ui/banner.js';
-import { formatStepHeader } from './ui/theme.js';
-import { renderConfigSummary, renderCompletionCard } from './ui/summary.js';
+import { nextSteps } from './ui/summary.js';
 
 /**
  * Graceful cancellation helper.
@@ -76,14 +75,13 @@ export function parseCliArgs(argv = process.argv) {
 
 /**
  * Main interactive CLI workflow.
- * Implements the 6-step prompt sequence with Charm Lip Gloss styling and responsive robot mascot banner.
+ * Implements the 6-step prompt sequence with a responsive terminal header.
  *
  * @param {string[]} [argv=process.argv]
  */
 export async function runCli(argv = process.argv) {
   const cliArgs = parseCliArgs(argv);
 
-  // 1. Display Responsive Robot Mascot ASCII Banner
   const cols = typeof process !== 'undefined' && process.stdout?.columns ? process.stdout.columns : 80;
   if (typeof renderBanner === 'function') {
     console.log(renderBanner(cols));
@@ -94,7 +92,7 @@ export async function runCli(argv = process.argv) {
 
   if (!projectName && !cliArgs.yes) {
     const namePrompt = await p.text({
-      message: formatStepHeader(1, 6, 'PROJECT', 'Name your workspace directory', cols),
+      message: 'Project name:',
       placeholder: 'my-mern-app',
       defaultValue: 'my-mern-app',
       validate: (value) => {
@@ -126,27 +124,27 @@ export async function runCli(argv = process.argv) {
 
   if (!language && !cliArgs.yes) {
     const langPrompt = await p.select({
-      message: formatStepHeader(2, 6, 'STACK', 'Choose language & compiler', cols),
+      message: 'Select a language:',
       options: [
         {
           value: 'ts-compiler',
           label: 'TypeScript + React Compiler',
-          hint: 'React 19 memoization compiler + TypeScript (Recommended)'
+          hint: 'recommended'
         },
         {
           value: 'ts',
           label: 'TypeScript',
-          hint: 'Vite + React TypeScript client & Node.js tsx server'
+          hint: 'standard TypeScript'
         },
         {
           value: 'js-compiler',
           label: 'JavaScript + React Compiler',
-          hint: 'React 19 memoization compiler + modern ES Modules'
+          hint: 'compiler enabled'
         },
         {
           value: 'js',
           label: 'JavaScript',
-          hint: 'Native ES Modules + JavaScript'
+          hint: 'standard JavaScript'
         }
       ],
       initialValue: 'ts-compiler'
@@ -162,22 +160,22 @@ export async function runCli(argv = process.argv) {
 
   if (!styling && !cliArgs.yes) {
     const stylingPrompt = await p.select({
-      message: formatStepHeader(3, 6, 'STYLING', 'Choose UI & styling framework', cols),
+      message: 'Select a styling option:',
       options: [
         {
           value: 'shadcn',
           label: 'shadcn/ui + Tailwind CSS',
-          hint: 'Ready-made dashboard-01, login-01, signup-01 blocks (Recommended)'
+          hint: 'styled components'
         },
         {
           value: 'tailwind',
           label: 'Tailwind CSS only',
-          hint: 'Tailwind CSS v4 Vite setup without pre-built UI components'
+          hint: 'utility classes'
         },
         {
           value: 'css',
           label: 'Plain CSS',
-          hint: 'Standard modular CSS without Tailwind'
+          hint: 'stylesheet'
         }
       ],
       initialValue: 'shadcn'
@@ -193,9 +191,9 @@ export async function runCli(argv = process.argv) {
 
   if (auth === undefined && !cliArgs.yes) {
     const authPrompt = await p.confirm({
-      message: formatStepHeader(4, 6, 'AUTH', 'Enable authentication system?', cols),
-      active: 'JWT Cookie Auth (with role middleware)',
-      inactive: 'No Auth (minimal starter)',
+      message: 'Include login and signup?',
+      active: 'Yes',
+      inactive: 'No',
       initialValue: true
     });
 
@@ -209,7 +207,7 @@ export async function runCli(argv = process.argv) {
 
   if (!cliArgs.yes) {
     const packagesPrompt = await p.multiselect({
-      message: formatStepHeader(5, 6, 'ADD-ONS', 'Select extra libraries & integrations', cols),
+      message: 'Select optional packages:',
       options: [
         { value: 'redux', label: 'Redux Toolkit', hint: 'Predictable state management (Client)' },
         { value: 'toastify', label: 'React-Toastify', hint: 'Rich toast notifications (Client)' },
@@ -233,7 +231,7 @@ export async function runCli(argv = process.argv) {
 
   if (shouldInstall === undefined && !cliArgs.yes) {
     const installPrompt = await p.confirm({
-      message: formatStepHeader(6, 6, 'INSTALL', 'Install dependencies now?', cols),
+      message: 'Install dependencies now?',
       active: 'Install now',
       inactive: 'Scaffold only',
       initialValue: true
@@ -265,12 +263,9 @@ export async function runCli(argv = process.argv) {
     shouldInstall
   };
 
-  if (typeof renderConfigSummary === 'function') {
-    console.log('\n' + renderConfigSummary(generatorOptions, { columns: cols }) + '\n');
-  }
 
   const s = p.spinner();
-  s.start('Forging your modern MERN workspace...');
+  s.start('Creating project files...');
 
   const clientDir = path.join(targetDir, 'client');
   const serverDir = path.join(targetDir, 'server');
@@ -282,13 +277,13 @@ export async function runCli(argv = process.argv) {
   await generateServer(serverDir, { ...generatorOptions, language: backendLang, addOns: serverAddOns });
   await generateRoot(targetDir, projectName, generatorOptions);
 
-  s.stop(pc.green('Workspace structure forged successfully!'));
+  s.stop('Project files created.');
 
   if (shouldInstall) {
-    p.log.info(pc.cyan('Installing dependencies across root, client, and server...'));
+    p.log.info('Installing dependencies…');
     const result = await runInstall(targetDir);
     if (result.success) {
-      p.log.success(pc.green('All dependencies installed successfully!'));
+      p.log.success('Dependencies installed.');
     } else {
       process.exitCode = 1;
       p.outro(pc.yellow(`Installation failed: ${result.error}. Run "npm install" at workspace root to retry.`));
@@ -296,9 +291,5 @@ export async function runCli(argv = process.argv) {
     }
   }
 
-  if (typeof renderCompletionCard === 'function') {
-    console.log('\n' + renderCompletionCard(generatorOptions) + '\n');
-  }
-
-  p.outro(pc.cyan(`Ready to build! Navigate to your project: cd "${projectName}"`));
+  p.outro(nextSteps(projectName, shouldInstall));
 }

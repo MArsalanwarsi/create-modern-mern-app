@@ -62,3 +62,7 @@ if [[ "$state" = new ]]; then
 else
   echo "Verified that v$version is already published."
 fi
+
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  echo "version=$version" >> "$GITHUB_OUTPUT"
+fi

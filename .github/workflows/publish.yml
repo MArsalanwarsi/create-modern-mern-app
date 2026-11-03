@@ -79,6 +79,13 @@ jobs:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
       - name: Bump patch, push release tag and publish the tarball
+        id: publish
         run: bash scripts/release.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Verify public install
+        if: steps.publish.outputs.version != ''
+        timeout-minutes: 9
+        env:
+          RELEASE_VERSION: ${{ steps.publish.outputs.version }}
+        run: bash scripts/verify-public-install.sh "$RELEASE_VERSION"

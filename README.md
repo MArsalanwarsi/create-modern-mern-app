@@ -156,3 +156,5 @@ Push your changes to main. After the repository checks and packed-starter matrix
 For npm authentication, register a GitHub Actions trusted publisher in the npm package settings for owner MArsalanwarsi, repository create-modern-mern-app, and workflow filename publish.yml. Alternatively, configure the GitHub Actions secret NPM_TOKEN with publication rights for this package. Repository rules must allow the workflow to push the release commit to main and create the version tag.
 
 If npm publication fails after the Git push, fix the reported error and rerun the failed job. The workflow reuses the tagged version and verifies the checksum if npm already accepted it. After an automatic release, pull main before making your next push.
+
+After publication, the release job verifies the public `@latest` CLI in an empty project with a fresh npm cache on each attempt. Check **Verify public install** and the run summary for the observed version. If verification times out, rerun the failed job to recheck the existing release.

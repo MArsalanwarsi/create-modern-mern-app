@@ -17,10 +17,16 @@ jobs:
     services:
       mongo:
         image: mongo:8
-        ports: ['27017:27017']
+        ports:
+          - 27017/tcp
+        options: >-
+          --health-cmd "mongosh --quiet --host 127.0.0.1 --eval 'quit(db.adminCommand({ ping: 1 }).ok ? 0 : 1)'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24.16.0'
       - run: npm ci
@@ -30,15 +36,23 @@ jobs:
       - run: npm run test:packed -- ${{ matrix.starter }}
         env:
           TEST_BROWSER: '1'
-          TEST_MONGO_URI: mongodb://127.0.0.1:27017
+          TEST_MONGO_URI: mongodb://127.0.0.1:${{ job.services.mongo.ports['27017'] }}
+      - name: Show MongoDB service diagnostics on failure
+        if: failure()
+        env:
+          MONGO_CONTAINER: ${{ job.services.mongo.id }}
+        run: |
+          docker inspect --format '{{json .State}}' "$MONGO_CONTAINER"
+          docker port "$MONGO_CONTAINER"
+          docker logs --tail 80 "$MONGO_CONTAINER"
 
   checks:
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
       - run: npm ci
@@ -56,10 +70,10 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'

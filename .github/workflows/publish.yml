@@ -1,49 +1,69 @@
 name: Publish to npm
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches:
       - main
-    tags:
-      - 'v*'
   workflow_dispatch:
 
 jobs:
-  test-and-publish:
+  packed:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        starter: [default, tailwind, minimal]
+    services:
+      mongo:
+        image: mongo:8
+        ports: ['27017:27017']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.16.0'
+      - run: npm ci
+      - name: Install Chrome for the production navigation test
+        if: matrix.starter == 'default'
+        run: npx --no-install playwright install --with-deps chrome
+      - run: npm run test:packed -- ${{ matrix.starter }}
+        env:
+          TEST_BROWSER: '1'
+          TEST_MONGO_URI: mongodb://127.0.0.1:27017
+
+  checks:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
 
-      - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+  release:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: [checks, packed]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: npm-release-main
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run test suite
-        run: npm test
-
-      - name: Check version & publish to npm
-        run: |
-          CURRENT_VERSION=$(node -p "require('./package.json').version")
-          PUBLISHED_VERSION=$(npm view create-modern-mern-app version 2>/dev/null || echo "none")
-
-          echo "Workspace version: $CURRENT_VERSION"
-          echo "Published version: $PUBLISHED_VERSION"
-
-          if [ "$CURRENT_VERSION" != "$PUBLISHED_VERSION" ]; then
-            echo "Publishing create-modern-mern-app@$CURRENT_VERSION to npm..."
-            npm publish --access public
-          else
-            echo "Version $CURRENT_VERSION is already published on npm. Skipping publish."
-          fi
+      - name: Bump patch, push release tag and publish the tarball
+        run: bash scripts/release.sh
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

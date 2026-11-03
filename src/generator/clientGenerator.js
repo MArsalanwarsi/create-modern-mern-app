@@ -94,7 +94,7 @@ export async function generateClient(targetDir, options = {}) {
     private: true,
     version: '0.0.0',
     type: 'module',
-    engines: { node: '>=20.12.0' },
+    engines: { node: '>=24.16.0' },
     scripts: {
       dev: 'vite',
       build: isTs ? 'tsc -b && vite build' : 'vite build',
@@ -223,6 +223,22 @@ export function cn(...inputs${isTs ? ': import("clsx").ClassValue[]' : ''}) {
 `;
   } else if (resolvedStyling === 'tailwind') {
     files['src/index.css'] = `@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #17202a;
+  --color-card: #ffffff;
+  --color-card-foreground: #17202a;
+  --color-primary: #193d59;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e2e8f0;
+  --color-secondary-foreground: #1e293b;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #475569;
+  --color-border: #cbd5e1;
+  --color-ring: #2563eb;
+  --color-destructive: #b91c1c;
+}
 
 @layer base {
   * {
@@ -581,59 +597,78 @@ export function Contact() {
 
   // 11. Dashboard Pages in src/pages/dashboard/ (only when auth enabled)
   if (hasAuth) {
-    files[`src/pages/dashboard/Settings.${ext}`] = `
+    files[`src/pages/dashboard/Settings.${ext}`] = `import { useOutletContext } from 'react-router-dom';
+
 export function Settings() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-foreground">Settings</h2>
-        <p className="text-sm text-muted-foreground">Manage your application and account configuration.</p>
-      </div>
-      <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
-        <h3 className="text-base font-semibold text-card-foreground">Profile & Preferences</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Update your account settings and notification preferences.</p>
-        <div className="mt-4 border-t border-border pt-4">
-          <p className="text-sm text-muted-foreground">Configure your workspace settings here.</p>
-        </div>
-      </div>
-    </div>
-  );
+  const { user } = useOutletContext${isTs ? '<{ user: { name: string; email: string; role: string } }>' : ''}();
+  return <section className="space-y-4 p-4"><h2 className="text-2xl font-bold">Settings</h2>
+    <h3>Account details</h3>
+    <dl><dt>Name</dt><dd>{user.name}</dd><dt>Email</dt><dd>{user.email}</dd><dt>Role</dt><dd>{user.role}</dd></dl>
+  </section>;
 }
 `;
   }
 
   // 12. App.{jsx,tsx} with React Router DOM routes (conditional auth & dashboard)
   if (hasAuth) {
-    files[`src/App.${ext}`] = `import { BrowserRouter, Routes, Route } from 'react-router-dom';
+    files[`src/components/PageLoadRecovery.${ext}`] = `export function recoverPageLoad(error${isTs ? ': unknown' : ''}) {
+  console.error('Could not load the requested page module.', error);
+  return { default: PageLoadRecovery };
+}
+
+function PageLoadRecovery() {
+  return (
+    <main aria-labelledby="page-load-title" className="mx-auto max-w-lg p-6">
+      <h1 id="page-load-title" className="text-2xl font-semibold">This page couldn’t load</h1>
+      <p role="alert" className="my-4">A new version may be available. Check your connection and refresh to try again.</p>
+      <button type="button" className="rounded-md border px-4 py-2" onClick={() => window.location.reload()}>
+        Refresh page
+      </button>
+    </main>
+  );
+}
+`;
+    files[`src/App.${ext}`] = `import { lazy, Suspense } from 'react';
+import { recoverPageLoad } from './components/PageLoadRecovery';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WebsiteLayout } from './layout/WebsiteLayout';
-import { AuthenticatedDashboard } from './layout/AuthenticatedDashboard';
-import { Account } from './pages/auth/Account';
 import { Home } from './pages/website/Home';
 import { About } from './pages/website/About';
 import { Contact } from './pages/website/Contact';
-import { Overview } from './pages/dashboard/Overview';
-import { Settings } from './pages/dashboard/Settings';
 ${hasToastify ? `import { ToastContainer } from 'react-toastify';\n` : ''}
+const AuthenticatedDashboard = lazy(() => import('./layout/AuthenticatedDashboard').then(module => ({ default: module.AuthenticatedDashboard })).catch(recoverPageLoad));
+
+const Overview = lazy(() => import('./pages/dashboard/Overview').then(module => ({ default: module.Overview })).catch(recoverPageLoad));
+
+const Members = lazy(() => import('./pages/dashboard/Members').then(module => ({ default: module.Members })).catch(recoverPageLoad));
+
+const Settings = lazy(() => import('./pages/dashboard/Settings').then(module => ({ default: module.Settings })).catch(recoverPageLoad));
+
+const Account = lazy(() => import('./pages/auth/Account').then(module => ({ default: module.Account })).catch(recoverPageLoad));
+
 export default function App() {
   return (
     <BrowserRouter>
       ${hasToastify ? '<ToastContainer position="top-right" autoClose={3000} />' : ''}
-      <Routes>
-        {/* Public Website Routes */}
-        <Route path="/" element={<WebsiteLayout />}>
-          <Route index element={<Home />} />
-          <Route path="about" element={<About />} />
-          <Route path="contact" element={<Contact />} />
-        </Route>
+      <Suspense fallback={<p role="status">Loading page…</p>}>
+        <Routes>
+          {/* Public Website Routes */}
+          <Route path="/" element={<WebsiteLayout />}>
+            <Route index element={<Home />} />
+            <Route path="about" element={<About />} />
+            <Route path="contact" element={<Contact />} />
+          </Route>
 
-        {/* Dashboard Admin Routes */}
-        <Route path="/login" element={<Account key="login" mode="login" />} />
-        <Route path="/signup" element={<Account key="signup" mode="signup" />} />
-        <Route path="/dashboard" element={<AuthenticatedDashboard />}>
-          <Route index element={<Overview />} />
-          <Route path="settings" element={<Settings />} />
-        </Route>
-      </Routes>
+          {/* Dashboard Admin Routes */}
+          <Route path="/login" element={<Account key="login" mode="login" />} />
+          <Route path="/signup" element={<Account key="signup" mode="signup" />} />
+          <Route path="/dashboard" element={<AuthenticatedDashboard />}>
+            <Route index element={<Overview />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="members" element={<Members />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -13,14 +13,11 @@ export async function addShadcn(files, { isTs, hasAuth = true } = {}) {
 
   const authTargets = hasAuth ? [
     ['login-form', `src/components/login-form.${ext}`],
-    ['LoginForm', `src/components/LoginForm.${ext}`],
     ['signup-form', `src/components/signup-form.${ext}`],
-    ['SignupForm', `src/components/SignupForm.${ext}`],
     ['AuthForm', `src/components/auth/AuthForm.${ext}`],
     ['DashboardLayout', `src/layout/DashboardLayout.${ext}`],
     ['SidebarSlice', `src/layout/slices/Sidebar.${ext}`],
     ['Header', `src/layout/slices/Header.${ext}`],
-    ['Overview', `src/pages/dashboard/Overview.${ext}`]
   ] : [];
 
   const targets = [

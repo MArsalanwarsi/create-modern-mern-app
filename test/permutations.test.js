@@ -98,7 +98,7 @@ describe('Permutation Test Matrix (F8 / Milestone 4)', () => {
 
     const rootPkg = JSON.parse(fs.readFileSync(path.join(projectDir, 'package.json'), 'utf8'));
     assert.deepStrictEqual(rootPkg.workspaces, ['client', 'server']);
-    assert.strictEqual(rootPkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(rootPkg.engines?.node, '>=24.16.0');
     assert.ok(rootPkg.scripts.dev.includes('concurrently'));
     assert.ok(rootPkg.scripts['build:client']);
     assert.ok(rootPkg.scripts['build:server']);
@@ -185,7 +185,7 @@ describe('Permutation Test Matrix (F8 / Milestone 4)', () => {
 
     // 5. Client Package Manifest
     const clientPkg = JSON.parse(fs.readFileSync(path.join(clientDir, 'package.json'), 'utf8'));
-    assert.strictEqual(clientPkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(clientPkg.engines?.node, '>=24.16.0');
     assert.ok(clientPkg.dependencies['react']);
     assert.ok(clientPkg.dependencies['react-dom']);
     assert.ok(clientPkg.dependencies['react-router-dom']);
@@ -226,7 +226,7 @@ describe('Permutation Test Matrix (F8 / Milestone 4)', () => {
 
     // 6. Server Package Manifest
     const serverPkg = JSON.parse(fs.readFileSync(path.join(serverDir, 'package.json'), 'utf8'));
-    assert.strictEqual(serverPkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(serverPkg.engines?.node, '>=24.16.0');
     assert.ok(serverPkg.dependencies['express']);
     assert.ok(serverPkg.dependencies['mongoose']);
 

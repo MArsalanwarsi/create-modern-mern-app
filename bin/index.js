@@ -44,6 +44,12 @@ Examples:
   process.exit(0);
 }
 
+const [major, minor] = process.versions.node.split('.').map(Number);
+if (major < 24 || (major === 24 && minor < 16)) {
+  console.error(`This starter requires Node.js 24.16 or newer. Current version: ${process.version}.`);
+  process.exit(1);
+}
+
 // 3. Deferred dynamic import of interactive CLI engine
 try {
   const { runCli } = await import('../src/cli.js');

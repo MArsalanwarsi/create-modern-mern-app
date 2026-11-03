@@ -54,12 +54,6 @@ export function LoginForm({
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <Link
-                    to="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
                 </div>
                 <Input
                   id="password"
@@ -76,9 +70,6 @@ export function LoginForm({
               )}
               <Button type="submit" className="w-full" disabled={pending}>
                 {pending ? 'Logging in…' : 'Login'}
-              </Button>
-              <Button variant="outline" type="button" className="w-full">
-                Login with Google
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">

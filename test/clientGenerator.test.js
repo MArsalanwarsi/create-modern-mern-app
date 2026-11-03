@@ -32,7 +32,7 @@ describe('clientGenerator', () => {
 
     // Check package.json dependencies
     const pkg = JSON.parse(fs.readFileSync(path.join(testDir, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(pkg.engines?.node, '>=24.16.0');
     assert.ok(pkg.dependencies['react-router-dom']);
     assert.ok(pkg.dependencies['@reduxjs/toolkit']);
     assert.ok(pkg.dependencies['react-toastify']);
@@ -64,7 +64,7 @@ describe('clientGenerator', () => {
     assert.ok(!viteConfig.includes('react({,'));
 
     const pkg = JSON.parse(fs.readFileSync(path.join(jsDir, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(pkg.engines?.node, '>=24.16.0');
     assert.ok(pkg.devDependencies['babel-plugin-react-compiler']);
   });
 
@@ -111,17 +111,9 @@ describe('clientGenerator', () => {
     assert.ok(fs.existsSync(path.join(modernDir, 'src/components/signup-form.tsx')));
     assert.ok(fs.existsSync(path.join(modernDir, 'src/components/auth/AuthForm.tsx')));
 
-    // Overview includes 4 KPI metrics and transactions table
+    // Overview uses the authenticated account and links to the protected directory
     const overview = fs.readFileSync(path.join(modernDir, 'src/pages/dashboard/Overview.tsx'), 'utf8');
-    assert.ok(overview.includes('Total Revenue'));
-    assert.ok(overview.includes('$45,231.89'));
-    assert.ok(overview.includes('Subscriptions'));
-    assert.ok(overview.includes('+2,350'));
-    assert.ok(overview.includes('Sales'));
-    assert.ok(overview.includes('+12,234'));
-    assert.ok(overview.includes('Active Now'));
-    assert.ok(overview.includes('+573'));
-    assert.ok(overview.includes('Transactions'));
+    assert.ok(overview.includes('/dashboard/members'));
 
     // index.css has no hardcoded hex overrides
     const indexCss = fs.readFileSync(path.join(modernDir, 'src/index.css'), 'utf8');
@@ -133,7 +125,7 @@ describe('clientGenerator', () => {
     // SidebarSlice uses safe optional chaining for user
     const sidebar = fs.readFileSync(path.join(modernDir, 'src/layout/slices/Sidebar.tsx'), 'utf8');
     assert.ok(sidebar.includes("user?.name || 'Workspace Member'"));
-    assert.ok(sidebar.includes("user?.email || 'member@example.com'"));
+    assert.ok(sidebar.includes("user?.email"));
     assert.ok(!sidebar.includes('{user.name}'));
     assert.ok(!sidebar.includes('{user.email}'));
     assert.ok(sidebar.includes('export function Sidebar({ user }: { user?: WorkspaceUser | null })'));
@@ -233,15 +225,7 @@ describe('clientGenerator', () => {
     const overviewTsx = path.join(tailwindDir, 'src/pages/dashboard/Overview.tsx');
     assert.ok(fs.existsSync(overviewTsx));
     const content = fs.readFileSync(overviewTsx, 'utf8');
-    assert.ok(content.includes('Total Revenue'));
-    assert.ok(content.includes('$45,231.89'));
-    assert.ok(content.includes('Subscriptions'));
-    assert.ok(content.includes('+2,350'));
-    assert.ok(content.includes('Sales'));
-    assert.ok(content.includes('+12,234'));
-    assert.ok(content.includes('Active Now'));
-    assert.ok(content.includes('+573'));
-    assert.ok(content.includes('Transactions'));
+    assert.ok(content.includes('/dashboard/members'));
     // Zero external UI primitives, Radix, or lucide-react imports
     assert.ok(!content.includes('lucide-react'));
     assert.ok(!content.includes('@radix-ui'));

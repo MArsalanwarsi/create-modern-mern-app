@@ -146,7 +146,7 @@ export async function authenticateUser({ email, password }${isTs ? ': Authentica
   files[`src/services/user.service.${ext}`] = `import { User } from '../models/user.model${importExt}';
 
 export async function getUsers(limit${isTs ? ': number' : ''} = 50) {
-  return User.find().limit(limit);
+  return User.find().select('_id name email role').sort({ _id: -1 }).limit(limit).lean();
 }
 
 export async function getUserById(id${isTs ? ': string' : ''}) {
@@ -237,18 +237,59 @@ export const signup${handler} = authenticate(true);
 export const login${handler} = authenticate(false);
 `;
 
+  // An atomic MongoDB update owns the counter and its reset time across replicas.
+  files[`src/config/loginLimit.${ext}`] = `import mongoose from 'mongoose';
+import { rateLimit } from 'express-rate-limit';
+
+const windowMs = 15 * 60_000;
+const mode = process.env.LOGIN_LIMIT_STORE || 'memory';
+if (!['memory', 'mongo'].includes(mode)) throw new Error('LOGIN_LIMIT_STORE must be memory or mongo');
+
+function counters() {
+  const db = mongoose.connection.db;
+  if (!db) throw new Error('Login limiter requires a database connection');
+  return db.collection${isTs ? '<{ _id: string; hits: number; resetTime: Date }>' : ''}('auth_rate_limits');
+}
+
+export async function prepareLoginLimit() {
+  if (mode === 'mongo') await counters().createIndex({ resetTime: 1 }, { expireAfterSeconds: 0 });
+}
+
+const store = {
+  async increment(key${isTs ? ': string' : ''}) {
+    const expired = { $lte: [{ $ifNull: ['$resetTime', new Date(0)] }, '$$NOW'] };
+    const result = await counters().findOneAndUpdate({ _id: key }, [{ $set: {
+      hits: { $cond: [expired, 1, { $add: ['$hits', 1] }] },
+      resetTime: { $cond: [expired, { $add: ['$$NOW', windowMs] }, '$resetTime'] }
+    } }], { upsert: true, returnDocument: 'after' });
+    if (!result) throw new Error('Could not record login attempt');
+    return { totalHits: result.hits, resetTime: result.resetTime };
+  },
+  async decrement(key${isTs ? ': string' : ''}) {
+    await counters().updateOne({ _id: key, hits: { $gt: 0 } }, { $inc: { hits: -1 } });
+  },
+  async resetKey(key${isTs ? ': string' : ''}) {
+    await counters().deleteOne({ _id: key });
+  }
+};
+
+export const loginLimit = rateLimit({
+  windowMs, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false,
+  store: mode === 'mongo' ? store : undefined,
+  message: { message: 'Too many attempts. Try again later.' }
+});
+`;
+
   // 7. Auth Routes: src/routes/auth.routes.{js,ts}
   files[`src/routes/auth.routes.${ext}`] = `import { Router } from 'express';
-import { rateLimit } from 'express-rate-limit';
+import { loginLimit } from '../config/loginLimit.js';
 import { authenticate } from '../controllers/auth.controller${importExt}';
 import { requireToken } from '../middlewares/requireToken${importExt}';
 import { cookieName, cookieOptions } from '../config/session${importExt}';
 
 const router = Router();
-const limit = rateLimit({ windowMs: 15 * 60_000, limit: 30, standardHeaders: 'draft-8', legacyHeaders: false,
-  message: { message: 'Too many attempts. Try again later.' } });
-router.post('/signup', limit, authenticate(true));
-router.post('/login', limit, authenticate(false));
+router.post('/signup', loginLimit, authenticate(true));
+router.post('/login', loginLimit, authenticate(false));
 router.get('/me', requireToken, (_req, res) => res.json({ user: res.locals.user }));
 router.post('/logout', (_req, res) => { res.clearCookie(cookieName, cookieOptions); res.sendStatus(204); });
 export default router;

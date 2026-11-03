@@ -111,7 +111,7 @@ describe('Tier 3: E2E Permutation Matrix (8 Permutations)', () => {
 
     const p2OverviewPath = path.join(clientDir, 'src/pages/dashboard/Overview.jsx');
     assert.ok(fs.existsSync(p2OverviewPath));
-    assert.ok(fs.readFileSync(p2OverviewPath, 'utf8').includes('$45,231.89'));
+    assert.ok(fs.readFileSync(p2OverviewPath, 'utf8').includes('/dashboard/members'));
 
     const p2Navbar = fs.readFileSync(path.join(clientDir, 'src/layout/slices/Navbar.jsx'), 'utf8');
     assert.ok(p2Navbar.includes('p2-js-auth-tailwind'));
@@ -219,7 +219,7 @@ describe('Tier 3: E2E Permutation Matrix (8 Permutations)', () => {
 
     const p6OverviewPath = path.join(clientDir, 'src/pages/dashboard/Overview.tsx');
     assert.ok(fs.existsSync(p6OverviewPath));
-    assert.ok(fs.readFileSync(p6OverviewPath, 'utf8').includes('$45,231.89'));
+    assert.ok(fs.readFileSync(p6OverviewPath, 'utf8').includes('/dashboard/members'));
 
     const p6Navbar = fs.readFileSync(path.join(clientDir, 'src/layout/slices/Navbar.tsx'), 'utf8');
     assert.ok(p6Navbar.includes('p6-ts-auth-tailwind'));

@@ -24,9 +24,9 @@ describe('rootGenerator', () => {
     assert.ok(pkg.scripts['dev:client']);
     assert.ok(pkg.scripts['dev:server']);
     assert.ok(pkg.scripts['test']);
-    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(pkg.engines?.node, '>=24.16.0');
 
     const readme = fs.readFileSync(path.join(testDir, 'README.md'), 'utf8');
-    assert.ok(readme.includes('Node.js 20.12'));
+    assert.ok(readme.includes('Node.js 24.16'));
   });
 });

@@ -53,7 +53,7 @@ describe('serverGenerator', () => {
     // Check package.json dependencies
     const pkg = JSON.parse(fs.readFileSync(path.join(testDir, 'package.json'), 'utf8'));
     assert.strictEqual(pkg.type, 'module');
-    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(pkg.engines?.node, '>=24.16.0');
     assert.ok(pkg.dependencies['express']);
     assert.ok(pkg.dependencies['mongoose']);
     assert.ok(pkg.dependencies['bcryptjs']);
@@ -98,7 +98,7 @@ describe('serverGenerator', () => {
     assert.ok(indexTs.includes("app.use('/api', csrfProtection);"));
 
     const pkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf8'));
-    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
+    assert.strictEqual(pkg.engines?.node, '>=24.16.0');
     assert.ok(pkg.devDependencies['tsx']);
     assert.ok(pkg.devDependencies['typescript']);
     assert.ok(pkg.devDependencies['@types/express']);
@@ -167,4 +167,12 @@ describe('serverGenerator', () => {
     assert.strictEqual(fs.existsSync(path.join(noAuthTsDir, 'src/services/auth.service.ts')), false);
     assert.strictEqual(fs.existsSync(path.join(noAuthTsDir, 'src/services/user.service.ts')), false);
   });
+  it('provides upload middleware without exposing an anonymous disk-write route', async () => {
+    const dir = path.join(testDir, 'no-auth-upload');
+    await generateServer(dir, { language: 'js', auth: false, addOns: ['multer'] });
+    assert.ok(fs.existsSync(path.join(dir, 'src/middlewares/multer.js')));
+    const routes = fs.readFileSync(path.join(dir, 'src/routes/api.routes.js'), 'utf8');
+    assert.doesNotMatch(routes, /multer|upload/);
+  });
+
 });

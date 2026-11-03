@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { generateApiTests } from './apiTests.js';
 import { addAuthServer } from './authServer.js';
 import { writeFileTree } from '../utils/fs-helpers.js';
 import { sanitizePackageName } from '../utils/naming.js';
@@ -27,6 +28,7 @@ export async function generateServer(targetDir, options = {}) {
 
   // 1. package.json dependencies
   const dependencies = {
+    helmet: '^8.3.0',
     express: '^5.3.0',
     mongoose: '^9.11.4'
   };
@@ -77,7 +79,7 @@ export async function generateServer(targetDir, options = {}) {
     name: sanitizePackageName(projectName) + '-server',
     version: '1.0.0',
     type: 'module',
-    engines: { node: '>=20.12.0' },
+    engines: { node: '>=24.16.0' },
     scripts: isTs
       ? {
           lint: `oxlint index.${ext} src --deny-warnings`,
@@ -95,6 +97,8 @@ export async function generateServer(targetDir, options = {}) {
     devDependencies
   };
 
+  serverPkg.scripts.test = isTs ? 'tsx --test test/api.test.js' : 'node --test test/api.test.js';
+  files['test/api.test.js'] = generateApiTests(isTs, hasAuth);
   files['package.json'] = JSON.stringify(serverPkg, null, 2);
 
   // 2. TypeScript config if applicable
@@ -148,25 +152,12 @@ export default cloudinary;
   // 5. Auth Server (conditional scaffolding)
   if (hasAuth) {
     addAuthServer(files, isTs);
-    // User Service: src/services/user.service.{js,ts}
-    files[`src/services/user.service.${ext}`] = `import { User } from '../models/user.model${importExt}';
-
-export async function getUsers(limit${isTs ? ': number' : ''} = 50) {
-  return User.find().limit(limit);
-}
-
-export async function getUserById(id${isTs ? ': string' : ''}) {
-  return User.findById(id).select('name email role').lean();
-}
-
-export const getUsersList = getUsers;
-`;
   }
 
   // 6. Controller: src/controllers/api.controller.{js,ts}
   if (hasAuth) {
     files[`src/controllers/api.controller.${ext}`] = `import { getUsers as fetchUsers } from '../services/user.service${importExt}';
-${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export async function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
+${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
   res.json({
     status: 'online',
     message: 'Backend server is running smoothly',
@@ -184,7 +175,7 @@ export async function getUsers(req${isTs ? ': Request' : ''}, res${isTs ? ': Res
 }
 `;
   } else {
-    files[`src/controllers/api.controller.${ext}`] = `${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export async function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
+    files[`src/controllers/api.controller.${ext}`] = `${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
   res.json({
     status: 'online',
     message: 'Backend server is running smoothly',
@@ -229,24 +220,10 @@ router.post('/upload', requireToken, upload.single('file'), (req, res) => {
   } else {
     files[`src/routes/api.routes.${ext}`] = `import { Router } from 'express';
 import { getHealthCheck } from '../controllers/api.controller${importExt}';
-${hasMulter ? `import { upload } from '../middlewares/multer${importExt}';\n` : ''}
+
 const router = Router();
-
-// Public health check
 router.get('/health', getHealthCheck);
-
-${hasMulter ? `// Sample file upload route
-router.post('/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'No file uploaded' });
-  }
-  res.json({
-    success: true,
-    message: 'File uploaded successfully',
-    filename: req.file.filename || req.file.originalname
-  });
-});
-` : ''}export default router;
+export default router;
 `;
   }
 
@@ -339,41 +316,40 @@ export async function sendEmail({ to, subject, html }${isTs ? ': { to: string; s
   if (hasDotenv) {
     indexCode += `import 'dotenv/config';\n`;
   }
-  indexCode += `import express from 'express';\n`;
+  indexCode += `import express from 'express';\nimport helmet from 'helmet';\n`;
   if (hasCors) {
     indexCode += `import cors from 'cors';\n`;
   }
+  if (hasAuth) indexCode += `import { prepareLoginLimit } from './src/config/loginLimit.js';\n`;
   indexCode += `import { connectDB } from './src/config/db${importExt}';\n`;
   indexCode += `import apiRoutes from './src/routes/api.routes${importExt}';\n`;
   indexCode += `import { csrfProtection } from './src/middlewares/csrf${importExt}';\n`;
   indexCode += `import { errorHandler } from './src/middlewares/errorHandler${importExt}';\n\n`;
 
-  indexCode += `const app = express();\n`;
+  indexCode += `export const app = express();\napp.use(helmet());\n`;
+  if (hasAuth) indexCode += `if (process.env.TRUSTED_PROXY_CIDRS) app.set('trust proxy', process.env.TRUSTED_PROXY_CIDRS);\n`;
   indexCode += `const PORT = process.env.PORT || 5000;\n\n`;
 
   if (hasCors) {
-    indexCode += `// CORS middleware\napp.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000', credentials: true }));\n\n`;
+    indexCode += `app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000', credentials: true }));\n\n`;
   }
 
-  indexCode += `// Body parsers\n`;
   indexCode += `app.use(express.json());\n`;
   indexCode += `app.use(express.urlencoded({ extended: true }));\n\n`;
 
   indexCode += `// API Security: Cross-origin forms cannot supply this header. Only allow trusted origins in CORS.\n`;
   indexCode += `app.use('/api', csrfProtection);\n\n`;
 
-  indexCode += `// API Routes\n`;
   indexCode += `app.use('/api', apiRoutes);\n\n`;
 
-  indexCode += `// Error handler\n`;
   indexCode += `app.use(errorHandler);\n\n`;
 
-  indexCode += `// Connect Database & Start Server\n`;
-  indexCode += `connectDB().then(() => {\n`;
+  indexCode += `if (import.meta.main) {\n  await connectDB();\n`;
+  if (hasAuth) indexCode += `  await prepareLoginLimit();\n`;
   indexCode += `  app.listen(PORT, () => {\n`;
   indexCode += `    console.log(\`Server is running on http://localhost:\${PORT}\`);\n`;
   indexCode += `  });\n`;
-  indexCode += `});\n`;
+  indexCode += `}\n`;
 
   files[`index.${ext}`] = indexCode;
 
@@ -389,6 +365,7 @@ export async function sendEmail({ to, subject, html }${isTs ? ': { to: string; s
   let envFile = envExample.split('\n# Cloudinary')[0].split('\n# Nodemailer')[0];
 
   if (hasAuth) {
+    envExample += '\n# Use mongo on every API replica to share login attempts.\nLOGIN_LIMIT_STORE=memory\n# Trusted ingress addresses only (comma-separated CIDRs).\nTRUSTED_PROXY_CIDRS=\n';
     envExample += '\n# Generate a unique secret per environment (32 bytes or more).\nJWT_SECRET=\n';
     envFile += '\nJWT_SECRET=' + randomBytes(48).toString('hex') + '\n';
   }

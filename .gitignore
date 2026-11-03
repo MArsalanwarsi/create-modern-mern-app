@@ -1,6 +1,22 @@
-node_modules
-.superpowers
-dist
-
+node_modules/
+dist/
 !handbook/dist/
 handbook/.openai/
+
+# Local configuration and tool output
+.env
+.env.*
+!.env.example
+*.log
+*.tgz
+coverage/
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+
+# Local planning and release notes
+.superpowers/
+/docs/superpowers/
+/PROJECT_CONTEXT.md
+/PROJECT_CONTEXT.txt
+/GITHUB_ACTIONS_NPM_SETUP.txt

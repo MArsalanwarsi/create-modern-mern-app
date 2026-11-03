@@ -9,7 +9,6 @@ import { generateServer } from './generator/serverGenerator.js';
 import { generateRoot } from './generator/rootGenerator.js';
 import { runInstall } from './generator/installer.js';
 
-// UI Presentation imports (Features F1 and F2)
 import { renderBanner } from './ui/banner.js';
 import { formatStepHeader } from './ui/theme.js';
 import { renderConfigSummary, renderCompletionCard } from './ui/summary.js';
@@ -91,9 +90,6 @@ export async function runCli(argv = process.argv) {
     console.log();
   }
 
-  // -------------------------------------------------------------
-  // Step 1: Project Name & Target Directory
-  // -------------------------------------------------------------
   let projectName = cliArgs.projectName;
 
   if (!projectName && !cliArgs.yes) {
@@ -126,9 +122,6 @@ export async function runCli(argv = process.argv) {
     throw err;
   }
 
-  // -------------------------------------------------------------
-  // Step 2: Language & Compiler
-  // -------------------------------------------------------------
   let language = cliArgs.language;
 
   if (!language && !cliArgs.yes) {
@@ -165,9 +158,6 @@ export async function runCli(argv = process.argv) {
     language = 'ts-compiler';
   }
 
-  // -------------------------------------------------------------
-  // Step 3: Styling Framework
-  // -------------------------------------------------------------
   let styling = cliArgs.styling;
 
   if (!styling && !cliArgs.yes) {
@@ -199,9 +189,6 @@ export async function runCli(argv = process.argv) {
     styling = 'shadcn';
   }
 
-  // -------------------------------------------------------------
-  // Step 4: Authentication System
-  // -------------------------------------------------------------
   let auth = cliArgs.auth;
 
   if (auth === undefined && !cliArgs.yes) {
@@ -218,9 +205,6 @@ export async function runCli(argv = process.argv) {
     auth = true;
   }
 
-  // -------------------------------------------------------------
-  // Step 5: Extra Add-ons
-  // -------------------------------------------------------------
   let packages;
 
   if (!cliArgs.yes) {
@@ -245,9 +229,6 @@ export async function runCli(argv = process.argv) {
     packages = ['toastify', 'cors', 'dotenv'];
   }
 
-  // -------------------------------------------------------------
-  // Step 6: Install Dependencies
-  // -------------------------------------------------------------
   let shouldInstall = cliArgs.install;
 
   if (shouldInstall === undefined && !cliArgs.yes) {
@@ -264,9 +245,6 @@ export async function runCli(argv = process.argv) {
     shouldInstall = false;
   }
 
-  // -------------------------------------------------------------
-  // Construct Contract-Compliant GeneratorOptions
-  // -------------------------------------------------------------
   const clientPackages = packages.filter(pkg => ['redux', 'toastify'].includes(pkg));
   const serverAddOns = packages.filter(pkg => ['cors', 'dotenv', 'multer', 'cloudinary', 'nodemailer'].includes(pkg));
   const backendLang = language.startsWith('ts') ? 'ts' : 'js';
@@ -287,16 +265,10 @@ export async function runCli(argv = process.argv) {
     shouldInstall
   };
 
-  // -------------------------------------------------------------
-  // Display Charm Lip Gloss Configuration Review Summary Card
-  // -------------------------------------------------------------
   if (typeof renderConfigSummary === 'function') {
     console.log('\n' + renderConfigSummary(generatorOptions, { columns: cols }) + '\n');
   }
 
-  // -------------------------------------------------------------
-  // Generator Execution with Animated Spinner
-  // -------------------------------------------------------------
   const s = p.spinner();
   s.start('Forging your modern MERN workspace...');
 
@@ -308,13 +280,10 @@ export async function runCli(argv = process.argv) {
 
   await generateClient(clientDir, generatorOptions);
   await generateServer(serverDir, { ...generatorOptions, language: backendLang, addOns: serverAddOns });
-  await generateRoot(targetDir, projectName);
+  await generateRoot(targetDir, projectName, generatorOptions);
 
   s.stop(pc.green('Workspace structure forged successfully!'));
 
-  // -------------------------------------------------------------
-  // Optional Automated Dependency Installation
-  // -------------------------------------------------------------
   if (shouldInstall) {
     p.log.info(pc.cyan('Installing dependencies across root, client, and server...'));
     const result = await runInstall(targetDir);
@@ -327,9 +296,6 @@ export async function runCli(argv = process.argv) {
     }
   }
 
-  // -------------------------------------------------------------
-  // Display Charm Lip Gloss Completion Outro Card
-  // -------------------------------------------------------------
   if (typeof renderCompletionCard === 'function') {
     console.log('\n' + renderCompletionCard(generatorOptions) + '\n');
   }

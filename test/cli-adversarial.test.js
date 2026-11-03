@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
@@ -76,34 +76,40 @@ describe('Adversarial: CLI Arguments and Options Contracts', () => {
 });
 
 describe('Adversarial: Terminal Geometry and Negative Columns', () => {
+  const originalNoColor = process.env.NO_COLOR;
+  before(() => { delete process.env.NO_COLOR; });
+  after(() => {
+    if (originalNoColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = originalNoColor;
+  });
   it('safely handles negative, zero, and NaN columns in banner rendering', () => {
-    const negBanner = renderBanner(-10);
+    const negBanner = renderBanner(-10, { isTTY: true });
     assert.ok(stripAnsi(negBanner).includes('MODERN MERN'));
 
-    const zeroBanner = renderBanner(0);
+    const zeroBanner = renderBanner(0, { isTTY: true });
     assert.ok(stripAnsi(zeroBanner).includes('MODERN MERN'));
 
-    const nanBanner = renderBanner(NaN);
+    const nanBanner = renderBanner(NaN, { isTTY: true });
     assert.ok(stripAnsi(nanBanner).includes('MODERN MERN'));
   });
 
   it('accurately switches banners at exact boundary breakpoints', () => {
     // Breakpoint < 54: Minimal
-    const belowCompact = renderBanner(BANNER_BREAKPOINTS.COMPACT - 1);
+    const belowCompact = renderBanner(BANNER_BREAKPOINTS.COMPACT - 1, { isTTY: true });
     assert.ok(!stripAnsi(belowCompact).includes('==='), 'Minimal banner should not have robot visor');
 
     // Breakpoint 54: Compact visor
-    const atCompact = renderBanner(BANNER_BREAKPOINTS.COMPACT);
+    const atCompact = renderBanner(BANNER_BREAKPOINTS.COMPACT, { isTTY: true });
     assert.ok(stripAnsi(atCompact).includes('==='), 'Compact banner should have robot visor');
     assert.ok(!stripAnsi(atCompact).includes('React 19 ·'), 'Compact banner should not have full subtitle');
 
     // Breakpoint 67: Compact visor
-    const belowFull = renderBanner(BANNER_BREAKPOINTS.FULL - 1);
+    const belowFull = renderBanner(BANNER_BREAKPOINTS.FULL - 1, { isTTY: true });
     assert.ok(stripAnsi(belowFull).includes('==='), 'Below full should still be compact visor');
     assert.ok(!stripAnsi(belowFull).includes('React 19 ·'), 'Below full should not have full subtitle');
 
     // Breakpoint 68: Full 6-armed mascot
-    const atFull = renderBanner(BANNER_BREAKPOINTS.FULL);
+    const atFull = renderBanner(BANNER_BREAKPOINTS.FULL, { isTTY: true });
     assert.ok(stripAnsi(atFull).includes('(⚛) React') || stripAnsi(atFull).includes('(o) React'));
     assert.ok(stripAnsi(atFull).includes('React 19 ·') || stripAnsi(atFull).includes('React 19'));
   });

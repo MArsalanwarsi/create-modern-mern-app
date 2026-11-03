@@ -49,17 +49,4 @@ Welcome, AI Agent! This file provides everything you need to understand, maintai
 ---
 
 ## 5. How to Release Updates
-```bash
-# 1. Verify tests
-npm test
-
-# 2. Commit and push
-git add .
-git commit -m "feat: your feature"
-git push origin main
-
-# 3. Bump version and publish
-npm version patch # or minor/major
-npm publish
-git push --tags origin main
-```
+Push tested changes to main. The publish.yml workflow runs the release checks, increments the patch version, pushes a release commit and tag, and publishes to npm. See the automatic npm releases section in README.md for authentication and recovery.

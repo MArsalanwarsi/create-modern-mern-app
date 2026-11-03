@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test';
+import { before, after, describe, it } from 'node:test';
 import assert from 'node:assert';
 import {
   renderBanner,
@@ -10,6 +10,12 @@ import {
 } from '../src/ui/banner.js';
 
 describe('UI: Robot Mascot ASCII Banner (F1)', () => {
+  const originalNoColor = process.env.NO_COLOR;
+  before(() => { delete process.env.NO_COLOR; });
+  after(() => {
+    if (originalNoColor === undefined) delete process.env.NO_COLOR;
+    else process.env.NO_COLOR = originalNoColor;
+  });
   it('exports expected breakpoints and dimensions constants', () => {
     assert.strictEqual(BANNER_BREAKPOINTS.FULL, 68);
     assert.strictEqual(BANNER_BREAKPOINTS.COMPACT, 54);
@@ -76,6 +82,12 @@ describe('UI: Robot Mascot ASCII Banner (F1)', () => {
     const minimal = getMinimalBanner('3.0.0', true);
     assert.ok(minimal.includes('create-modern-mern-app v3.0.0'));
     assert.strictEqual(minimal.includes('\x1b['), false);
+  });
+
+  it('honors NO_COLOR in an interactive terminal', () => {
+    process.env.NO_COLOR = '1';
+    try { assert.equal(renderBanner(80, { isTTY: true }), getMinimalBanner(undefined, true)); }
+    finally { delete process.env.NO_COLOR; }
   });
 
   it('respects custom version option', () => {

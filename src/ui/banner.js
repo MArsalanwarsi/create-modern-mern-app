@@ -135,7 +135,7 @@ export function getMinimalBanner(version = pkgVersion, plain = false) {
  */
 export function renderBanner(columns, options = {}) {
   const cols = columns ?? (typeof process !== 'undefined' && process.stdout?.columns ? process.stdout.columns : 80);
-  const isTTY = options.isTTY ?? (typeof process !== 'undefined' ? (process.stdout?.isTTY ?? true) : true);
+  const isTTY = options.isTTY ?? (typeof process !== 'undefined' ? Boolean(process.stdout?.isTTY) : true);
   const version = options.version ?? pkgVersion;
   const isColorDisabled = options.plain || !isTTY || (typeof process !== 'undefined' && Boolean(process.env.NO_COLOR));
 

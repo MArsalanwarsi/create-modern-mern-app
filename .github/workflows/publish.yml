@@ -10,7 +10,7 @@ on:
 
 jobs:
   packed:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         starter: [default, tailwind, minimal]
@@ -48,7 +48,7 @@ jobs:
           docker logs --tail 80 "$MONGO_CONTAINER"
 
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -63,7 +63,7 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: [checks, packed]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     concurrency:
       group: npm-release-main
       cancel-in-progress: false

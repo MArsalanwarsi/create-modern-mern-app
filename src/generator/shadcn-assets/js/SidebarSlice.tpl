@@ -53,8 +53,8 @@ export function Sidebar({ user }) {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t p-4">
-        <span className="truncate text-sm font-medium">{user.name}</span>
-        <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+        <span className="truncate text-sm font-medium">{user?.name || 'Workspace Member'}</span>
+        <span className="truncate text-xs text-muted-foreground">{user?.email || 'member@example.com'}</span>
       </SidebarFooter>
     </SidebarRoot>
   )

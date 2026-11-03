@@ -1,153 +1,304 @@
-import pkg from '../package.json' with { type: 'json' };
+import fs from 'node:fs';
+import path from 'node:path';
 import * as p from '@clack/prompts';
 import pc from 'picocolors';
-import path from 'node:path';
-import fs from 'node:fs';
+
 import { validateTargetDir } from './utils/naming.js';
 import { generateClient } from './generator/clientGenerator.js';
 import { generateServer } from './generator/serverGenerator.js';
 import { generateRoot } from './generator/rootGenerator.js';
 import { runInstall } from './generator/installer.js';
 
-export async function runCli(argv = process.argv) {
-  const rawArgName = argv.slice(2).find(arg => !arg.startsWith('-'));
-  const total = rawArgName ? 5 : 6;
-  let step = 0;
-  function question(section, title) {
-    const position = String(++step).padStart(2, '0') + ' / 0' + total;
-    return pc.bgCyan(pc.black(` ${position} `)) + '  ' + pc.cyan(section) + '  ' + pc.bold(title);
+// UI Presentation imports (Features F1 and F2)
+import { renderBanner } from './ui/banner.js';
+import { formatStepHeader } from './ui/theme.js';
+import { renderConfigSummary, renderCompletionCard } from './ui/summary.js';
+
+/**
+ * Graceful cancellation helper.
+ * Throws ERR_CANCELLED instead of calling process.exit(0) directly
+ * to allow test runners to test cancellation without terminating the runner.
+ */
+function handleCancel(value) {
+  if (p.isCancel(value)) {
+    p.cancel(pc.yellow('Setup cancelled. No files were generated.'));
+    const err = new Error('Operation cancelled by user');
+    err.code = 'ERR_CANCELLED';
+    throw err;
+  }
+  return value;
+}
+
+/**
+ * Lightweight, zero-dependency CLI arguments parser.
+ * Supports flags: -y/--yes, -l/--language, -s/--styling, --auth/--no-auth, --install/--no-install.
+ *
+ * @param {string[]} [argv=process.argv]
+ * @returns {object}
+ */
+export function parseCliArgs(argv = process.argv) {
+  const args = argv.slice(2);
+  const flags = {
+    projectName: undefined,
+    yes: false,
+    language: undefined,
+    styling: undefined,
+    auth: undefined,
+    install: undefined
+  };
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === '-y' || arg === '--yes') {
+      flags.yes = true;
+    } else if (arg === '--auth') {
+      flags.auth = true;
+    } else if (arg === '--no-auth') {
+      flags.auth = false;
+    } else if (arg === '--install') {
+      flags.install = true;
+    } else if (arg === '--no-install') {
+      flags.install = false;
+    } else if (arg === '--language' || arg === '-l') {
+      flags.language = args[++i];
+    } else if (arg.startsWith('--language=')) {
+      flags.language = arg.split('=')[1];
+    } else if (arg === '--styling' || arg === '-s') {
+      flags.styling = args[++i];
+    } else if (arg.startsWith('--styling=')) {
+      flags.styling = arg.split('=')[1];
+    } else if (!arg.startsWith('-') && !flags.projectName) {
+      flags.projectName = arg;
+    }
   }
 
-  const compact = (process.stdout.columns ?? 80) < 54;
-  const logo = compact ? '' : pc.cyan('  /\\    ');
-  const banner = [
-    logo + pc.bold('MODERN MERN'),
-    (compact ? '' : pc.cyan(' /__\\   ')) + pc.dim('Full-stack workspace builder'),
-    '',
-    compact ? 'React + Express + MongoDB' : 'React + shadcn/ui    /    Express + MongoDB'
-  ].join('\n');
-  p.box(banner, pc.cyan(`CREATE  /  v${pkg.version}`), { formatBorder: pc.cyan });
-  let projectName = rawArgName;
+  return flags;
+}
 
-  if (!projectName) {
+/**
+ * Main interactive CLI workflow.
+ * Implements the 6-step prompt sequence with Charm Lip Gloss styling and responsive robot mascot banner.
+ *
+ * @param {string[]} [argv=process.argv]
+ */
+export async function runCli(argv = process.argv) {
+  const cliArgs = parseCliArgs(argv);
+
+  // 1. Display Responsive Robot Mascot ASCII Banner
+  const cols = typeof process !== 'undefined' && process.stdout?.columns ? process.stdout.columns : 80;
+  if (typeof renderBanner === 'function') {
+    console.log(renderBanner(cols));
+    console.log();
+  }
+
+  // -------------------------------------------------------------
+  // Step 1: Project Name & Target Directory
+  // -------------------------------------------------------------
+  let projectName = cliArgs.projectName;
+
+  if (!projectName && !cliArgs.yes) {
     const namePrompt = await p.text({
-      message: question('Workspace', 'Name your project'),
+      message: formatStepHeader(1, 6, 'PROJECT', 'Name your workspace directory', cols),
       placeholder: 'my-mern-app',
       defaultValue: 'my-mern-app',
       validate: (value) => {
         const trimmed = (value ?? '').trim();
         if (!trimmed) return 'Project name cannot be empty.';
-        const dirCheck = validateTargetDir(path.resolve(process.cwd(), trimmed));
+        if (/[<>:"|?*]/.test(trimmed)) return 'Project name contains invalid characters.';
+        const targetPath = path.resolve(process.cwd(), trimmed);
+        const dirCheck = validateTargetDir(targetPath);
         if (!dirCheck.valid) return dirCheck.error;
       }
     });
 
-    if (p.isCancel(namePrompt)) {
-      p.cancel('Operation cancelled.');
-      process.exit(0);
-    }
-    projectName = namePrompt;
+    handleCancel(namePrompt);
+    projectName = namePrompt.trim();
+  } else if (!projectName) {
+    projectName = 'my-mern-app';
   }
 
   const targetDir = path.resolve(process.cwd(), projectName);
-
-  // Check target directory
   const dirCheck = validateTargetDir(targetDir);
   if (!dirCheck.valid) {
     p.cancel(pc.red(dirCheck.error));
-    process.exit(1);
+    const err = new Error(dirCheck.error);
+    err.code = 'ERR_DIR_COLLISION';
+    throw err;
   }
 
-  // 2. Frontend variant
-  const variant = await p.select({
-    message: question('Client', 'Choose a React starter'),
-    options: [
-      { value: 'js', label: 'JavaScript', hint: 'Fast Vite + React' },
-      { value: 'js-compiler', label: 'JavaScript + React Compiler', hint: 'React 19 Compiler memoization' },
-      { value: 'ts', label: 'TypeScript', hint: 'Vite + React with TypeScript' },
-      { value: 'ts-compiler', label: 'TypeScript + React Compiler', hint: 'React 19 Compiler + TypeScript' }
-    ]
-  });
+  // -------------------------------------------------------------
+  // Step 2: Language & Compiler
+  // -------------------------------------------------------------
+  let language = cliArgs.language;
 
-  if (p.isCancel(variant)) {
-    p.cancel('Operation cancelled.');
-    process.exit(0);
+  if (!language && !cliArgs.yes) {
+    const langPrompt = await p.select({
+      message: formatStepHeader(2, 6, 'STACK', 'Choose language & compiler', cols),
+      options: [
+        {
+          value: 'ts-compiler',
+          label: 'TypeScript + React Compiler',
+          hint: 'React 19 memoization compiler + TypeScript (Recommended)'
+        },
+        {
+          value: 'ts',
+          label: 'TypeScript',
+          hint: 'Vite + React TypeScript client & Node.js tsx server'
+        },
+        {
+          value: 'js-compiler',
+          label: 'JavaScript + React Compiler',
+          hint: 'React 19 memoization compiler + modern ES Modules'
+        },
+        {
+          value: 'js',
+          label: 'JavaScript',
+          hint: 'Native ES Modules + JavaScript'
+        }
+      ],
+      initialValue: 'ts-compiler'
+    });
+
+    handleCancel(langPrompt);
+    language = langPrompt;
+  } else if (!language) {
+    language = 'ts-compiler';
   }
 
-  // 3. Frontend packages
-  const clientPackages = await p.multiselect({
-    message: question('Client', 'Add client libraries'),
-    options: [
-      { value: 'redux', label: 'Redux Toolkit', hint: 'Predictable state management' },
-      { value: 'toastify', label: 'React-Toastify', hint: 'Rich toast notifications' }
-    ],
-    required: false,
-    initialValues: ['toastify']
-  });
+  // -------------------------------------------------------------
+  // Step 3: Styling Framework
+  // -------------------------------------------------------------
+  let styling = cliArgs.styling;
 
-  if (p.isCancel(clientPackages)) {
-    p.cancel('Operation cancelled.');
-    process.exit(0);
+  if (!styling && !cliArgs.yes) {
+    const stylingPrompt = await p.select({
+      message: formatStepHeader(3, 6, 'STYLING', 'Choose UI & styling framework', cols),
+      options: [
+        {
+          value: 'shadcn',
+          label: 'shadcn/ui + Tailwind CSS',
+          hint: 'Ready-made dashboard-01, login-01, signup-01 blocks (Recommended)'
+        },
+        {
+          value: 'tailwind',
+          label: 'Tailwind CSS only',
+          hint: 'Tailwind CSS v4 Vite setup without pre-built UI components'
+        },
+        {
+          value: 'css',
+          label: 'Plain CSS',
+          hint: 'Standard modular CSS without Tailwind'
+        }
+      ],
+      initialValue: 'shadcn'
+    });
+
+    handleCancel(stylingPrompt);
+    styling = stylingPrompt;
+  } else if (!styling) {
+    styling = 'shadcn';
   }
 
-  // 4. Backend language
-  const backendLang = await p.select({
-    message: question('Server', 'Choose a language'),
-    options: [
-      { value: 'js', label: 'JavaScript', hint: 'Native Node.js import/export' },
-      { value: 'ts', label: 'TypeScript', hint: 'Node with tsx runner & full typings' }
-    ]
-  });
+  // -------------------------------------------------------------
+  // Step 4: Authentication System
+  // -------------------------------------------------------------
+  let auth = cliArgs.auth;
 
-  if (p.isCancel(backendLang)) {
-    p.cancel('Operation cancelled.');
-    process.exit(0);
+  if (auth === undefined && !cliArgs.yes) {
+    const authPrompt = await p.confirm({
+      message: formatStepHeader(4, 6, 'AUTH', 'Enable authentication system?', cols),
+      active: 'JWT Cookie Auth (with role middleware)',
+      inactive: 'No Auth (minimal starter)',
+      initialValue: true
+    });
+
+    handleCancel(authPrompt);
+    auth = authPrompt;
+  } else if (auth === undefined) {
+    auth = true;
   }
 
-  // 5. Backend add-ons
-  const serverAddOns = await p.multiselect({
-    message: question('Server', 'Add integrations'),
-    options: [
-      { value: 'cors', label: 'CORS', hint: 'Cross-Origin Resource Sharing' },
-      { value: 'dotenv', label: 'dotenv', hint: 'Load configuration from .env' },
-      { value: 'multer', label: 'Multer', hint: 'File upload handling' },
-      { value: 'cloudinary', label: 'Cloudinary', hint: 'Cloud media storage' },
-      { value: 'nodemailer', label: 'Nodemailer', hint: 'Email service' }
-    ],
-    required: false,
-    initialValues: ['cors', 'dotenv']
-  });
+  // -------------------------------------------------------------
+  // Step 5: Extra Add-ons
+  // -------------------------------------------------------------
+  let packages;
 
-  if (p.isCancel(serverAddOns)) {
-    p.cancel('Operation cancelled.');
-    process.exit(0);
+  if (!cliArgs.yes) {
+    const packagesPrompt = await p.multiselect({
+      message: formatStepHeader(5, 6, 'ADD-ONS', 'Select extra libraries & integrations', cols),
+      options: [
+        { value: 'redux', label: 'Redux Toolkit', hint: 'Predictable state management (Client)' },
+        { value: 'toastify', label: 'React-Toastify', hint: 'Rich toast notifications (Client)' },
+        { value: 'cors', label: 'CORS', hint: 'Cross-Origin Resource Sharing (Server)' },
+        { value: 'dotenv', label: 'dotenv', hint: 'Load environment variables from .env (Server)' },
+        { value: 'multer', label: 'Multer', hint: 'Multipart file upload handling (Server)' },
+        { value: 'cloudinary', label: 'Cloudinary', hint: 'Cloud media storage and CDN uploads (Server)' },
+        { value: 'nodemailer', label: 'Nodemailer', hint: 'Email delivery utility via SMTP (Server)' }
+      ],
+      required: false,
+      initialValues: ['toastify', 'cors', 'dotenv']
+    });
+
+    handleCancel(packagesPrompt);
+    packages = packagesPrompt;
+  } else {
+    packages = ['toastify', 'cors', 'dotenv'];
   }
 
-  // 6. Install dependencies prompt
-  const shouldInstall = await p.confirm({
-    message: question('Install', 'Install packages now?'),
-    active: 'Install now',
-    inactive: 'Scaffold only',
-    initialValue: true
-  });
+  // -------------------------------------------------------------
+  // Step 6: Install Dependencies
+  // -------------------------------------------------------------
+  let shouldInstall = cliArgs.install;
 
-  if (p.isCancel(shouldInstall)) {
-    p.cancel('Operation cancelled.');
-    process.exit(0);
+  if (shouldInstall === undefined && !cliArgs.yes) {
+    const installPrompt = await p.confirm({
+      message: formatStepHeader(6, 6, 'INSTALL', 'Install dependencies now?', cols),
+      active: 'Install now',
+      inactive: 'Scaffold only',
+      initialValue: true
+    });
+
+    handleCancel(installPrompt);
+    shouldInstall = installPrompt;
+  } else if (shouldInstall === undefined) {
+    shouldInstall = false;
   }
 
-  const additions = [...clientPackages, ...serverAddOns];
-  p.note([
-    pc.bold(projectName),
-    '',
-    `Client   ${variant.startsWith('ts') ? 'TypeScript' : 'JavaScript'}${variant.includes('compiler') ? ' + React Compiler' : ''} · shadcn/ui`,
-    `Server   ${backendLang === 'ts' ? 'TypeScript' : 'JavaScript'} · Express · JWT auth`,
-    `Extras   ${additions.join(', ') || 'None'}`
-  ].join('\n'), pc.cyan('Your workspace'));
+  // -------------------------------------------------------------
+  // Construct Contract-Compliant GeneratorOptions
+  // -------------------------------------------------------------
+  const clientPackages = packages.filter(pkg => ['redux', 'toastify'].includes(pkg));
+  const serverAddOns = packages.filter(pkg => ['cors', 'dotenv', 'multer', 'cloudinary', 'nodemailer'].includes(pkg));
+  const backendLang = language.startsWith('ts') ? 'ts' : 'js';
 
-  // 7. Scaffolding execution
+  const generatorOptions = {
+    projectName,
+    targetDir,
+    language,
+    variant: language,     // Backward compatibility alias for clientGenerator
+    backendLang,           // Backward compatibility alias for serverGenerator
+    styling,
+    auth,
+    packages,              // Unified packages array adhering to GeneratorOptions
+    clientPackages,        // Backward compatibility
+    addOns: serverAddOns,  // Backward compatibility alias for serverGenerator
+    serverAddOns,
+    install: shouldInstall,
+    shouldInstall
+  };
+
+  // -------------------------------------------------------------
+  // Display Charm Lip Gloss Configuration Review Summary Card
+  // -------------------------------------------------------------
+  if (typeof renderConfigSummary === 'function') {
+    console.log('\n' + renderConfigSummary(generatorOptions, { columns: cols }) + '\n');
+  }
+
+  // -------------------------------------------------------------
+  // Generator Execution with Animated Spinner
+  // -------------------------------------------------------------
   const s = p.spinner();
-  s.start('Scaffolding your MERN stack project...');
+  s.start('Forging your modern MERN workspace...');
 
   const clientDir = path.join(targetDir, 'client');
   const serverDir = path.join(targetDir, 'server');
@@ -155,41 +306,33 @@ export async function runCli(argv = process.argv) {
   fs.mkdirSync(clientDir, { recursive: true });
   fs.mkdirSync(serverDir, { recursive: true });
 
-  await generateClient(clientDir, {
-    projectName,
-    variant,
-    packages: clientPackages
-  });
-
-  await generateServer(serverDir, {
-    projectName,
-    language: backendLang,
-    addOns: serverAddOns
-  });
-
+  await generateClient(clientDir, generatorOptions);
+  await generateServer(serverDir, { ...generatorOptions, language: backendLang, addOns: serverAddOns });
   await generateRoot(targetDir, projectName);
 
-  s.stop(pc.green('Project structure created successfully!'));
+  s.stop(pc.green('Workspace structure forged successfully!'));
 
-  // 8. Optional installation
+  // -------------------------------------------------------------
+  // Optional Automated Dependency Installation
+  // -------------------------------------------------------------
   if (shouldInstall) {
-    p.log.info(pc.cyan('Installing dependencies in root, client, and server...'));
-    
+    p.log.info(pc.cyan('Installing dependencies across root, client, and server...'));
     const result = await runInstall(targetDir);
     if (result.success) {
       p.log.success(pc.green('All dependencies installed successfully!'));
     } else {
       process.exitCode = 1;
-      p.outro(pc.yellow(`Installation failed: ${result.error}. From the generated root, run npm install to retry.`));
+      p.outro(pc.yellow(`Installation failed: ${result.error}. Run "npm install" at workspace root to retry.`));
       return;
     }
   }
 
-  const commands = [
-    ...(projectName === '.' ? [] : [`cd "${projectName}"`]),
-    ...(shouldInstall ? [] : ['npm install']),
-    'npm run dev'
-  ];
-  p.note(commands.map(command => pc.bold(command)).join('\n'), pc.green('Start developing'));
-  p.outro(`${pc.green('Workspace ready')}  ${pc.dim('·')}  http://localhost:3000`);
+  // -------------------------------------------------------------
+  // Display Charm Lip Gloss Completion Outro Card
+  // -------------------------------------------------------------
+  if (typeof renderCompletionCard === 'function') {
+    console.log('\n' + renderCompletionCard(generatorOptions) + '\n');
+  }
+
+  p.outro(pc.cyan(`Ready to build! Navigate to your project: cd "${projectName}"`));
 }

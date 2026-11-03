@@ -50,7 +50,8 @@ describe('end-to-end fullstack scaffolding', () => {
     assert.ok(fs.existsSync(path.join(clientDir, 'src/pages/website/Home.tsx')));
     assert.ok(fs.existsSync(path.join(clientDir, 'src/pages/website/About.tsx')));
     assert.ok(fs.existsSync(path.join(clientDir, 'src/pages/website/Contact.tsx')));
-    assert.ok(fs.existsSync(path.join(clientDir, 'src/components/Card.tsx')));
+    assert.ok(fs.existsSync(path.join(clientDir, 'src/components/ui/card.tsx')));
+    assert.strictEqual(fs.existsSync(path.join(clientDir, 'src/components/Card.tsx')), false);
     assert.ok(fs.existsSync(path.join(clientDir, 'src/components/ui/button.tsx')));
     assert.ok(fs.existsSync(path.join(clientDir, 'src/store/index.ts')));
     assert.ok(fs.existsSync(path.join(clientDir, 'src/store/slices/counterSlice.ts')));

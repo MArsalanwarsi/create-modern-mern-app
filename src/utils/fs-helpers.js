@@ -24,21 +24,3 @@ export async function writeFileTree(targetDir, files) {
   }
 }
 
-/**
- * Recursively copies a directory tree from src to dest.
- */
-export function copyDirectory(srcDir, destDir) {
-  ensureDir(destDir);
-  const entries = fs.readdirSync(srcDir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const srcPath = path.join(srcDir, entry.name);
-    const destPath = path.join(destDir, entry.name);
-
-    if (entry.isDirectory()) {
-      copyDirectory(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
-  }
-}

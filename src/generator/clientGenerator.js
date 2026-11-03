@@ -3,25 +3,50 @@ import { addAuthClient } from './authClient.js';
 import { writeFileTree } from '../utils/fs-helpers.js';
 import { sanitizePackageName } from '../utils/naming.js';
 
-export async function generateClient(targetDir, options) {
-  const { projectName: rawName = 'client', variant = 'js', packages = [] } = options;
+export async function generateClient(targetDir, options = {}) {
+  const {
+    projectName: rawName = 'client',
+    variant,
+    language,
+    styling,
+    auth,
+    packages = [],
+    clientPackages = []
+  } = options;
+
   const projectName = sanitizePackageName(rawName);
-  const isTs = variant.startsWith('ts');
-  const isCompiler = variant.includes('compiler');
+
+  // 1. Language & Compiler normalization
+  const resolvedVariant = variant || language || 'js';
+  const isTs = resolvedVariant.startsWith('ts');
+  const isCompiler = resolvedVariant.includes('compiler');
   const ext = isTs ? 'tsx' : 'jsx';
   const scriptExt = isTs ? 'ts' : 'js';
 
-  const hasRedux = packages.includes('redux');
-  const hasToastify = packages.includes('toastify');
+  // 2. Packages array normalization
+  const resolvedPackages = Array.isArray(packages) && packages.length > 0
+    ? packages
+    : (Array.isArray(clientPackages) ? clientPackages : []);
+  const hasRedux = resolvedPackages.includes('redux');
+  const hasToastify = resolvedPackages.includes('toastify');
+
+  // 3. Styling normalization (default: 'shadcn')
+  let resolvedStyling = 'shadcn';
+  if (styling) {
+    resolvedStyling = styling;
+  } else if (resolvedPackages.includes('css')) {
+    resolvedStyling = 'css';
+  } else if (resolvedPackages.includes('tailwind') && !resolvedPackages.includes('shadcn')) {
+    resolvedStyling = 'shadcn';
+  }
+
+  // 4. Auth normalization (default: true)
+  const hasAuth = auth !== false && auth !== 'false';
 
   const files = {};
 
   // 1. package.json dependencies
   const dependencies = {
-    clsx: '^2.1.1',
-    'class-variance-authority': '^0.7.1',
-    'tailwind-merge': '^3.7.0',
-    'lucide-react': '^1.66.0',
     axios: '^1.21.0',
     react: '^19.3.1',
     'react-dom': '^19.3.1',
@@ -30,11 +55,18 @@ export async function generateClient(targetDir, options) {
 
   const devDependencies = {
     '@vitejs/plugin-react': '^6.2.1',
-    tailwindcss: '^4.3.3',
-    '@tailwindcss/vite': '^4.3.3',
     oxlint: '^1.90.0',
     vite: '^8.3.5'
   };
+
+  if (resolvedStyling !== 'css') {
+    dependencies['clsx'] = '^2.1.1';
+    dependencies['class-variance-authority'] = '^0.7.1';
+    dependencies['tailwind-merge'] = '^3.7.0';
+    dependencies['lucide-react'] = '^1.66.0';
+    devDependencies['tailwindcss'] = '^4.3.3';
+    devDependencies['@tailwindcss/vite'] = '^4.3.3';
+  }
 
   if (isCompiler) {
     devDependencies['@rolldown/plugin-babel'] = '^0.3.0';
@@ -62,6 +94,7 @@ export async function generateClient(targetDir, options) {
     private: true,
     version: '0.0.0',
     type: 'module',
+    engines: { node: '>=20.12.0' },
     scripts: {
       dev: 'vite',
       build: isTs ? 'tsc -b && vite build' : 'vite build',
@@ -90,15 +123,12 @@ export async function generateClient(targetDir, options) {
   // 3. vite.config.js / ts
   files[`vite.config.${scriptExt}`] = `import { defineConfig } from 'vite';
 import react${isCompiler ? ', { reactCompilerPreset }' : ''} from '@vitejs/plugin-react';
-${isCompiler ? "import babel from '@rolldown/plugin-babel';" : ''}
-import tailwindcss from '@tailwindcss/vite';
-import path from 'node:path';
+${isCompiler ? "import babel from '@rolldown/plugin-babel';\n" : ''}${resolvedStyling !== 'css' ? "import tailwindcss from '@tailwindcss/vite';\n" : ''}import path from 'node:path';
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    react()${isCompiler ? ',\n    babel({ presets: [reactCompilerPreset()] })' : ''},
-    tailwindcss()
+    react()${isCompiler ? ',\n    babel({ presets: [reactCompilerPreset()] })' : ''}${resolvedStyling !== 'css' ? ',\n    tailwindcss()' : ''}
   ],
   server: {
     proxy: { '/api': 'http://localhost:5000' },
@@ -133,17 +163,20 @@ export default defineConfig({
         noUnusedParameters: true,
         noFallthroughCasesInSwitch: true,
         paths: {
-            "@/*": ["./src/*"]
-          }
+          "@/*": ["./src/*"]
+        }
       },
       include: ["src"]
     }, null, 2);
   }
 
-  if (!isTs) files['jsconfig.json'] = JSON.stringify({ compilerOptions: { paths: { '@/*': ['./src/*'] } } }, null, 2);
+  if (!isTs) {
+    files['jsconfig.json'] = JSON.stringify({ compilerOptions: { paths: { '@/*': ['./src/*'] } } }, null, 2);
+  }
 
   // 5. Tailwind & Shadcn configs
-  files['components.json'] = JSON.stringify({
+  if (resolvedStyling === 'shadcn') {
+    files['components.json'] = JSON.stringify({
       "$schema": "https://ui.shadcn.com/schema.json",
       "style": "new-york",
       "rsc": false,
@@ -159,7 +192,9 @@ export default defineConfig({
         "utils": "@/lib/utils"
       }
     }, null, 2);
+  }
 
+  if (resolvedStyling !== 'css') {
     files[`src/lib/utils.${scriptExt}`] = `import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -167,31 +202,175 @@ export function cn(...inputs${isTs ? ': import("clsx").ClassValue[]' : ''}) {
   return twMerge(clsx(inputs));
 }
 `;
+  }
 
-  // 5b. Shared components in src/components/
-  files[`src/components/Card.${ext}`] = `
-export function Card({ title, children }${isTs ? ': { title?: string; children: React.ReactNode }' : ''}) {
-  return (
-    <div style={{ background: '#ffffff', borderRadius: '8px', padding: '1.5rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-      {title && <h3 style={{ marginTop: 0, marginBottom: '0.75rem', fontSize: '1.2rem', color: '#1e293b' }}>{title}</h3>}
-      <div>{children}</div>
-    </div>
-  );
+  // 6. index.css (Standardized @layer base without hardcoded body colors)
+  if (resolvedStyling === 'shadcn') {
+    files['src/index.css'] = `@import "tailwindcss";
+@import "./styles/shadcn.css";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 `;
+  } else if (resolvedStyling === 'tailwind') {
+    files['src/index.css'] = `@import "tailwindcss";
 
-  // 6. index.css
-  files['src/index.css'] = `@import "tailwindcss";
-@import "./styles/shadcn.css";
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+`;
+  } else {
+    // Plain CSS design tokens
+    files['src/index.css'] = `:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --text-primary: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --brand-primary: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-text: #ffffff;
+  --destructive: #ef4444;
+  --radius: 8px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family: var(--font-sans);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background-color: #f8fafc;
-  color: #0f172a;
+}
+
+a {
+  color: var(--brand-primary);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+.container {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.website-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.website-main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--border-color);
+}
+.navbar-brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+.navbar-brand a {
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.navbar-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+.navbar-links a {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.navbar-links a:hover {
+  color: var(--text-primary);
+}
+
+.footer {
+  padding: 1.5rem;
+  background-color: var(--bg-primary);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+  text-decoration: none;
+}
+.btn-primary {
+  background-color: var(--brand-primary);
+  color: var(--brand-text);
+}
+.btn-primary:hover {
+  background-color: var(--brand-hover);
+  text-decoration: none;
+}
+.btn-outline {
+  background-color: transparent;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+.btn-outline:hover {
+  background-color: var(--bg-secondary);
+}
+
+.card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
 }
 `;
+  }
 
   // 7. Redux Toolkit Store & Slice if selected
   if (hasRedux) {
@@ -235,20 +414,36 @@ export type AppDispatch = typeof store.dispatch;` : ''}
 `;
   }
 
-  // 8. Slices in src/layout/slices/
+  // 8. Slices in src/layout/slices/ (Navbar & Footer - no inline styles)
   files[`src/layout/slices/Navbar.${ext}`] = `import { Link } from 'react-router-dom';
 
 export function Navbar() {
   return (
-    <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 2rem', background: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-      <div style={{ fontWeight: 'bold', fontSize: '1.25rem' }}>
-        <Link to="/" style={{ textDecoration: 'none', color: '#1e293b' }}>${projectName}</Link>
+    <nav className="flex items-center justify-between px-6 py-4 bg-background border-b border-border">
+      <div className="font-bold text-xl">
+        <Link to="/" className="text-foreground hover:text-primary transition-colors">
+          ${projectName}
+        </Link>
       </div>
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-        <Link to="/" style={{ textDecoration: 'none', color: '#475569' }}>Home</Link>
-        <Link to="/about" style={{ textDecoration: 'none', color: '#475569' }}>About</Link>
-        <Link to="/contact" style={{ textDecoration: 'none', color: '#475569' }}>Contact</Link>
-        <Link to="/dashboard" style={{ textDecoration: 'none', color: '#2563eb', fontWeight: 600 }}>Dashboard →</Link>
+      <div className="flex items-center gap-6 text-sm font-medium">
+        <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+          Home
+        </Link>
+        <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">
+          About
+        </Link>
+        <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+          Contact
+        </Link>${hasAuth ? `
+        <Link to="/login" className="text-muted-foreground hover:text-foreground transition-colors">
+          Login
+        </Link>
+        <Link to="/signup" className="text-muted-foreground hover:text-foreground transition-colors">
+          Sign Up
+        </Link>
+        <Link to="/dashboard" className="text-primary font-semibold hover:underline">
+          Dashboard →
+        </Link>` : ''}
       </div>
     </nav>
   );
@@ -258,22 +453,23 @@ export function Navbar() {
   files[`src/layout/slices/Footer.${ext}`] = `
 export function Footer() {
   return (
-    <footer style={{ padding: '1.5rem 2rem', background: '#f1f5f9', borderTop: '1px solid #e2e8f0', textAlign: 'center', color: '#64748b' }}>
-      <p style={{ margin: 0 }}>© {new Date().getFullYear()} ${projectName}. Built with MERN Stack Generator.</p>
+    <footer className="py-6 px-4 bg-muted/50 border-t border-border text-center text-sm text-muted-foreground">
+      <p>© {new Date().getFullYear()} ${projectName}. Built with MERN Stack Generator.</p>
     </footer>
   );
 }
 `;
 
+  // 9. WebsiteLayout
   files[`src/layout/WebsiteLayout.${ext}`] = `import { Outlet } from 'react-router-dom';
 import { Navbar } from './slices/Navbar';
 import { Footer } from './slices/Footer';
 
 export function WebsiteLayout() {
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       <Navbar />
-      <main style={{ flex: 1, padding: '2rem' }}>
+      <main className="flex-1 p-6 md:p-8">
         <Outlet />
       </main>
       <Footer />
@@ -282,12 +478,11 @@ export function WebsiteLayout() {
 }
 `;
 
-  // 10. Website Pages in src/pages/website/
+  // 10. Website Pages in src/pages/website/ (no inline styles)
   files[`src/pages/website/Home.${ext}`] = `${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
 import { increment, decrement } from '../../store/slices/counterSlice';` : ''}
 ${hasToastify ? `import { toast } from 'react-toastify';` : ''}
-import { Button } from '../../components/ui/button';
-import { Link } from 'react-router-dom';
+${resolvedStyling === 'shadcn' ? "import { Button } from '../../components/ui/button';\n" : ''}import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { api, errorMessage } from '../../api/client';
 
@@ -304,40 +499,55 @@ export function Home() {
   const dispatch = useDispatch();` : ''}
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Welcome to ${projectName}</h1>
-      <p style={{ color: '#475569', fontSize: '1.1rem', lineHeight: '1.6' }}>
-        Your full-stack MERN project is ready. This is the public website home page mounted under <code>WebsiteLayout</code>.
-      </p>
+    <div className="max-w-3xl mx-auto space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Welcome to ${projectName}</h1>
+        <p className="mt-2 text-lg leading-relaxed text-muted-foreground">
+          Your full-stack MERN project is ready. This is the public website home page mounted under <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono text-foreground">WebsiteLayout</code>.
+        </p>
+      </div>
 
       ${hasToastify ? `
-      <div style={{ marginTop: '1.5rem' }}>
-        <button
-          onClick={() => toast.success('React Toastify is working!')}
-          style={{ padding: '0.6rem 1.2rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-        >
-          Test Toast Notification
-        </button>
+      <div>
+        ${resolvedStyling === 'shadcn'
+          ? `<Button variant="outline" onClick={() => toast.success('React Toastify is working!')}>Test Toast Notification</Button>`
+          : `<button type="button" onClick={() => toast.success('React Toastify is working!')} className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">Test Toast Notification</button>`
+        }
       </div>` : ''}
 
       ${hasRedux ? `
-      <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-        <h3>Redux Toolkit Counter</h3>
-        <p>Current Count: <strong>{count}</strong></p>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button onClick={() => dispatch(decrement())} style={{ padding: '0.4rem 0.8rem' }}>-</button>
-          <button onClick={() => dispatch(increment())} style={{ padding: '0.4rem 0.8rem' }}>+</button>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+        <h3 className="text-lg font-semibold text-card-foreground">Redux Toolkit Counter</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Current Count: <strong className="font-semibold text-foreground">{count}</strong></p>
+        <div className="mt-4 flex items-center gap-2">
+          ${resolvedStyling === 'shadcn'
+            ? `<Button variant="outline" size="sm" onClick={() => dispatch(decrement())}>-</Button>
+          <Button variant="outline" size="sm" onClick={() => dispatch(increment())}>+</Button>`
+            : `<button type="button" onClick={() => dispatch(decrement())} className="rounded-md border border-border bg-background px-3 py-1 text-sm font-medium hover:bg-muted">-</button>
+          <button type="button" onClick={() => dispatch(increment())} className="rounded-md border border-border bg-background px-3 py-1 text-sm font-medium hover:bg-muted">+</button>`
+          }
         </div>
       </div>` : ''}
 
-      <section className="my-8 rounded-xl border bg-card p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-widest">Connection lab</p>
-        <h2 className="my-3 text-2xl font-semibold">Test the full stack</h2>
-        <p className="mb-4">Send a request through Axios to your Express health endpoint.</p>
-        <Button disabled={checking} onClick={checkHealth}>{checking ? 'Checking…' : 'Check API health'}</Button>
-        <p role="status" className="mt-3">{health}</p>
+      <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Connection lab</p>
+        <h2 className="my-2 text-2xl font-semibold tracking-tight text-card-foreground">Test the full stack</h2>
+        <p className="mb-4 text-sm text-muted-foreground">Send a request through Axios to your Express health endpoint.</p>
+        ${resolvedStyling === 'shadcn'
+          ? `<Button disabled={checking} onClick={checkHealth}>{checking ? 'Checking…' : 'Check API health'}</Button>`
+          : `<button type="button" disabled={checking} onClick={checkHealth} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">{checking ? 'Checking…' : 'Check API health'}</button>`
+        }
+        <p role="status" className="mt-3 text-sm font-medium text-foreground">{health}</p>
       </section>
-      <div className="flex flex-wrap gap-5 font-medium underline"><Link to="/signup">Create an account</Link><Link to="/login">Sign in</Link><Link to="/dashboard">Open dashboard</Link></div>
+
+      <div className="flex flex-wrap gap-5 text-sm font-medium">
+        ${hasAuth ? `
+        <Link to="/signup" className="text-primary hover:underline">Create an account</Link>
+        <Link to="/login" className="text-primary hover:underline">Sign in</Link>
+        <Link to="/dashboard" className="text-primary hover:underline">Open dashboard</Link>` : `
+        <Link to="/about" className="text-primary hover:underline">About us</Link>
+        <Link to="/contact" className="text-primary hover:underline">Contact us</Link>`}
+      </div>
     </div>
   );
 }
@@ -346,9 +556,9 @@ export function Home() {
   files[`src/pages/website/About.${ext}`] = `
 export function About() {
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>About Us</h1>
-      <p style={{ color: '#475569', lineHeight: '1.6' }}>
+    <div className="max-w-3xl mx-auto space-y-4">
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">About Us</h1>
+      <p className="text-muted-foreground text-lg leading-relaxed">
         This application was scaffolded using the custom MERN stack generator with pre-configured routing, sliced layouts, and production-ready folder structures.
       </p>
     </div>
@@ -359,9 +569,9 @@ export function About() {
   files[`src/pages/website/Contact.${ext}`] = `
 export function Contact() {
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Contact Us</h1>
-      <p style={{ color: '#475569', lineHeight: '1.6' }}>
+    <div className="max-w-3xl mx-auto space-y-4">
+      <h1 className="text-3xl font-bold tracking-tight text-foreground">Contact Us</h1>
+      <p className="text-muted-foreground text-lg leading-relaxed">
         Feel free to reach out. Backend email services can be wired through Nodemailer in the server.
       </p>
     </div>
@@ -369,20 +579,32 @@ export function Contact() {
 }
 `;
 
-  // 11. Dashboard Pages in src/pages/dashboard/
-  files[`src/pages/dashboard/Settings.${ext}`] = `
+  // 11. Dashboard Pages in src/pages/dashboard/ (only when auth enabled)
+  if (hasAuth) {
+    files[`src/pages/dashboard/Settings.${ext}`] = `
 export function Settings() {
   return (
-    <div>
-      <h2>Settings</h2>
-      <p style={{ color: '#475569' }}>Manage your application and account configuration.</p>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Settings</h2>
+        <p className="text-sm text-muted-foreground">Manage your application and account configuration.</p>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+        <h3 className="text-base font-semibold text-card-foreground">Profile & Preferences</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Update your account settings and notification preferences.</p>
+        <div className="mt-4 border-t border-border pt-4">
+          <p className="text-sm text-muted-foreground">Configure your workspace settings here.</p>
+        </div>
+      </div>
     </div>
   );
 }
 `;
+  }
 
-  // 12. App.{jsx,tsx} with React Router DOM routes
-  files[`src/App.${ext}`] = `import { BrowserRouter, Routes, Route } from 'react-router-dom';
+  // 12. App.{jsx,tsx} with React Router DOM routes (conditional auth & dashboard)
+  if (hasAuth) {
+    files[`src/App.${ext}`] = `import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { WebsiteLayout } from './layout/WebsiteLayout';
 import { AuthenticatedDashboard } from './layout/AuthenticatedDashboard';
 import { Account } from './pages/auth/Account';
@@ -391,9 +613,7 @@ import { About } from './pages/website/About';
 import { Contact } from './pages/website/Contact';
 import { Overview } from './pages/dashboard/Overview';
 import { Settings } from './pages/dashboard/Settings';
-${hasToastify ? `import { ToastContainer } from 'react-toastify';
-` : ''}
-
+${hasToastify ? `import { ToastContainer } from 'react-toastify';\n` : ''}
 export default function App() {
   return (
     <BrowserRouter>
@@ -418,6 +638,30 @@ export default function App() {
   );
 }
 `;
+  } else {
+    files[`src/App.${ext}`] = `import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { WebsiteLayout } from './layout/WebsiteLayout';
+import { Home } from './pages/website/Home';
+import { About } from './pages/website/About';
+import { Contact } from './pages/website/Contact';
+${hasToastify ? `import { ToastContainer } from 'react-toastify';\n` : ''}
+export default function App() {
+  return (
+    <BrowserRouter>
+      ${hasToastify ? '<ToastContainer position="top-right" autoClose={3000} />' : ''}
+      <Routes>
+        {/* Public Website Routes */}
+        <Route path="/" element={<WebsiteLayout />}>
+          <Route index element={<Home />} />
+          <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
+`;
+  }
 
   // 13. main.{jsx,tsx}
   files[`src/main.${ext}`] = `import { StrictMode } from 'react';
@@ -426,7 +670,6 @@ import App from './App';
 import './index.css';
 ${hasRedux ? `import { Provider } from 'react-redux';
 import { store } from './store';` : ''}
-
 ReactDOM.createRoot(document.getElementById('root')${isTs ? '!' : ''}).render(
   <StrictMode>
     ${hasRedux ? '<Provider store={store}><App /></Provider>' : '<App />'}
@@ -434,10 +677,33 @@ ReactDOM.createRoot(document.getElementById('root')${isTs ? '!' : ''}).render(
 );
 `;
 
-  addAuthClient(files, isTs);
-  const registry = await addShadcn(files, { isTs });
-  Object.assign(dependencies, registry.dependencies);
-  Object.assign(devDependencies, registry.devDependencies);
+  // 14. Conditional Auth and Styling wiring
+  if (hasAuth) {
+    addAuthClient(files, { isTs, styling: resolvedStyling });
+  } else {
+    // Core Axios API client is always available for full-stack connectivity checks
+    files[`src/api/client.${scriptExt}`] = `import axios from 'axios';
+
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 10000,
+  withCredentials: true,
+  headers: { 'X-Requested-With': 'mern-client' }
+});
+
+export function errorMessage(error${isTs ? ': unknown' : ''}) {
+  return axios.isAxiosError(error) && typeof error.response?.data?.message === 'string'
+    ? error.response.data.message : 'Could not reach the API. Check your connection and retry.';
+}
+`;
+  }
+
+  if (resolvedStyling === 'shadcn') {
+    const registry = await addShadcn(files, { isTs, hasAuth });
+    Object.assign(dependencies, registry.dependencies);
+    Object.assign(devDependencies, registry.devDependencies);
+  }
+
   files['package.json'] = JSON.stringify(clientPkg, null, 2);
   await writeFileTree(targetDir, files);
 }

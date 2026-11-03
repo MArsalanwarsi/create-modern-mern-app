@@ -23,5 +23,10 @@ describe('rootGenerator', () => {
     assert.ok(pkg.scripts['install:all']);
     assert.ok(pkg.scripts['dev:client']);
     assert.ok(pkg.scripts['dev:server']);
+    assert.ok(pkg.scripts['test']);
+    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
+
+    const readme = fs.readFileSync(path.join(testDir, 'README.md'), 'utf8');
+    assert.ok(readme.includes('Node.js 20.12'));
   });
 });

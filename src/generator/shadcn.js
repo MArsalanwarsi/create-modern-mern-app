@@ -1,23 +1,32 @@
 import { readFile } from 'node:fs/promises';
 
 const primitives = [
-  'button', 'card', 'field', 'input', 'label', 'separator', 'sheet',
-  'sidebar', 'skeleton', 'tooltip'
+  'avatar', 'badge', 'button', 'card', 'field', 'input', 'label', 'separator', 'sheet',
+  'sidebar', 'skeleton', 'table', 'tooltip'
 ];
 
 // Adapted from the shadcn/ui new-york-v4 login-01, signup-01 and dashboard-01
 // registry blocks. Keep both source variants bundled for offline scaffolding.
-export async function addShadcn(files, { isTs }) {
+export async function addShadcn(files, { isTs, hasAuth = true } = {}) {
   const variant = isTs ? 'ts' : 'js';
   const ext = isTs ? 'tsx' : 'jsx';
-  const targets = [
-    ...primitives.map(name => [name, `src/components/ui/${name}.${ext}`]),
-    ['use-mobile', `src/hooks/use-mobile.${variant}`],
+
+  const authTargets = hasAuth ? [
+    ['login-form', `src/components/login-form.${ext}`],
+    ['LoginForm', `src/components/LoginForm.${ext}`],
+    ['signup-form', `src/components/signup-form.${ext}`],
+    ['SignupForm', `src/components/SignupForm.${ext}`],
     ['AuthForm', `src/components/auth/AuthForm.${ext}`],
     ['DashboardLayout', `src/layout/DashboardLayout.${ext}`],
     ['SidebarSlice', `src/layout/slices/Sidebar.${ext}`],
     ['Header', `src/layout/slices/Header.${ext}`],
     ['Overview', `src/pages/dashboard/Overview.${ext}`]
+  ] : [];
+
+  const targets = [
+    ...primitives.map(name => [name, `src/components/ui/${name}.${ext}`]),
+    ['use-mobile', `src/hooks/use-mobile.${variant}`],
+    ...authTargets
   ];
 
   const assets = [

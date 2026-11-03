@@ -6,7 +6,7 @@ Open `handbook/dist/index.html` for the setup guide and API reference. To deploy
 
 ## Quick start
 
-Use Node.js **24.16+**, npm and a running MongoDB service or Atlas database.
+Use Node.js **20.12+**, npm and a running MongoDB service or Atlas database.
 
 ```sh
 npx create-modern-mern-app@latest my-app

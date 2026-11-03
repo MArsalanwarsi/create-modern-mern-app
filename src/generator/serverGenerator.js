@@ -3,8 +3,14 @@ import { addAuthServer } from './authServer.js';
 import { writeFileTree } from '../utils/fs-helpers.js';
 import { sanitizePackageName } from '../utils/naming.js';
 
-export async function generateServer(targetDir, options) {
-  const { projectName = 'server', language = 'js', addOns = [] } = options;
+export async function generateServer(targetDir, options = {}) {
+  const {
+    projectName = 'server',
+    language = 'js',
+    addOns = [],
+    auth = true
+  } = options;
+
   const isTs = language === 'ts';
   const ext = isTs ? 'ts' : 'js';
   const importExt = '.js';
@@ -15,19 +21,23 @@ export async function generateServer(targetDir, options) {
   const hasCloudinary = addOns.includes('cloudinary');
   const hasNodemailer = addOns.includes('nodemailer');
   const hasDotenv = addOns.includes('dotenv');
+  const hasAuth = auth !== false && auth !== 'false';
 
   const files = {};
 
   // 1. package.json dependencies
   const dependencies = {
-    bcryptjs: '^3.0.3',
-    jsonwebtoken: '^9.0.3',
-    'express-rate-limit': '^8.7.2',
     express: '^5.3.0',
     mongoose: '^9.11.4'
   };
 
   const devDependencies = { oxlint: '^1.90.0' };
+
+  if (hasAuth) {
+    dependencies['bcryptjs'] = '^3.0.3';
+    dependencies['jsonwebtoken'] = '^9.0.3';
+    dependencies['express-rate-limit'] = '^8.7.2';
+  }
 
   if (hasDotenv) {
     dependencies['dotenv'] = '^18.0.9';
@@ -54,16 +64,20 @@ export async function generateServer(targetDir, options) {
 
   if (isTs) {
     devDependencies['typescript'] = '^7.0.2';
-    devDependencies['@types/jsonwebtoken'] = '^9.0.10';
     devDependencies['tsx'] = '^4.23.15';
     devDependencies['@types/node'] = '^26.6.6';
     devDependencies['@types/express'] = '^5.0.6';
+    if (hasAuth) {
+      devDependencies['@types/jsonwebtoken'] = '^9.0.10';
+      devDependencies['@types/bcryptjs'] = '^2.4.6';
+    }
   }
 
   const serverPkg = {
     name: sanitizePackageName(projectName) + '-server',
     version: '1.0.0',
     type: 'module',
+    engines: { node: '>=20.12.0' },
     scripts: isTs
       ? {
           lint: `oxlint index.${ext} src --deny-warnings`,
@@ -131,13 +145,28 @@ export default cloudinary;
 `;
   }
 
-  addAuthServer(files, isTs);
+  // 5. Auth Server (conditional scaffolding)
+  if (hasAuth) {
+    addAuthServer(files, isTs);
+    // User Service: src/services/user.service.{js,ts}
+    files[`src/services/user.service.${ext}`] = `import { User } from '../models/user.model${importExt}';
+
+export async function getUsers(limit${isTs ? ': number' : ''} = 50) {
+  return User.find().limit(limit);
+}
+
+export async function getUserById(id${isTs ? ': string' : ''}) {
+  return User.findById(id).select('name email role').lean();
+}
+
+export const getUsersList = getUsers;
+`;
+  }
 
   // 6. Controller: src/controllers/api.controller.{js,ts}
-  files[`src/controllers/api.controller.${ext}`] = `import { User } from '../models/user.model${importExt}';
-${isTs ? "import { Request, Response } from 'express';" : ''}
-
-export async function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}) {
+  if (hasAuth) {
+    files[`src/controllers/api.controller.${ext}`] = `import { getUsers as fetchUsers } from '../services/user.service${importExt}';
+${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export async function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
   res.json({
     status: 'online',
     message: 'Backend server is running smoothly',
@@ -145,30 +174,43 @@ export async function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? 
   });
 }
 
-export async function getUsers(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}) {
+export async function getUsers(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': Promise<void>' : ''} {
   try {
-    const users = await User.find().limit(50);
+    const users = await fetchUsers(50);
     res.json({ success: true, count: users.length, data: users });
   } catch {
     res.status(500).json({ success: false, message: 'Server error retrieving users' });
   }
 }
-
 `;
+  } else {
+    files[`src/controllers/api.controller.${ext}`] = `${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export async function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
+  res.json({
+    status: 'online',
+    message: 'Backend server is running smoothly',
+    timestamp: new Date().toISOString()
+  });
+}
+`;
+  }
 
   // 7. Routes: src/routes/api.routes.{js,ts}
-  files[`src/routes/api.routes.${ext}`] = `import { Router } from 'express';
+  if (hasAuth) {
+    files[`src/routes/api.routes.${ext}`] = `import { Router } from 'express';
 import { getHealthCheck, getUsers } from '../controllers/api.controller${importExt}';
-${hasMulter ? `import { upload } from '../middlewares/multer${importExt}';` : ''}
-
-import authRoutes from './auth.routes.js';
-import { requireToken } from '../middlewares/requireToken.js';
-import { requireRole } from '../middlewares/requireRole.js';
-
+import authRoutes from './auth.routes${importExt}';
+import { requireToken } from '../middlewares/requireToken${importExt}';
+import { requireRole } from '../middlewares/requireRole${importExt}';
+${hasMulter ? `import { upload } from '../middlewares/multer${importExt}';\n` : ''}
 const router = Router();
+
+// Authentication routes
 router.use('/auth', authRoutes);
 
+// Public health check
 router.get('/health', getHealthCheck);
+
+// Protected administrative routes
 router.get('/users', requireToken, requireRole('admin'), getUsers);
 
 ${hasMulter ? `// Sample file upload route
@@ -181,15 +223,35 @@ router.post('/upload', requireToken, upload.single('file'), (req, res) => {
     message: 'File uploaded successfully',
     filename: req.file.filename || req.file.originalname
   });
-});` : ''}
-
-export default router;
+});
+` : ''}export default router;
 `;
+  } else {
+    files[`src/routes/api.routes.${ext}`] = `import { Router } from 'express';
+import { getHealthCheck } from '../controllers/api.controller${importExt}';
+${hasMulter ? `import { upload } from '../middlewares/multer${importExt}';\n` : ''}
+const router = Router();
+
+// Public health check
+router.get('/health', getHealthCheck);
+
+${hasMulter ? `// Sample file upload route
+router.post('/upload', upload.single('file'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No file uploaded' });
+  }
+  res.json({
+    success: true,
+    message: 'File uploaded successfully',
+    filename: req.file.filename || req.file.originalname
+  });
+});
+` : ''}export default router;
+`;
+  }
 
   // 8. Middlewares
-  files[`src/middlewares/errorHandler.${ext}`] = `${isTs ? "import { Request, Response, NextFunction } from 'express';" : ''}
-
-export function errorHandler(err${isTs ? ': any' : ''}, req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, _next${isTs ? ': NextFunction' : ''}) {
+  files[`src/middlewares/errorHandler.${ext}`] = `${isTs ? "import type { Request, Response, NextFunction } from 'express';\n\n" : ''}export function errorHandler(err${isTs ? ': any' : ''}, _req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, _next${isTs ? ': NextFunction' : ''}) {
   console.error('Unhandled error:', err);
   const status = err.status || 500;
   res.status(status).json({
@@ -199,21 +261,38 @@ export function errorHandler(err${isTs ? ': any' : ''}, req${isTs ? ': Request' 
 }
 `;
 
+  // CSRF Protection Middleware
+  files[`src/middlewares/csrf.${ext}`] = `${isTs ? "import type { Request, Response, NextFunction } from 'express';\n\n" : ''}// Cross-origin forms cannot supply this header. Only allow trusted origins in CORS.
+export function csrfProtection(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, next${isTs ? ': NextFunction' : ''})${isTs ? ': void' : ''} {
+  res.set('Cache-Control', 'no-store');
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Requested-With') !== 'mern-client') {
+    res.status(403).json({ message: 'Missing API request header.' });
+    return;
+  }
+  next();
+}
+
+export default csrfProtection;
+`;
+
+  // Multer configuration & middleware
   if (hasMulter) {
-    files[`src/middlewares/multer.${ext}`] = `import multer from 'multer';
+    files[`src/config/multer.${ext}`] = `import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-const uploadDir = 'uploads/';
+// Resolve uploads directory relative to the server root (server/uploads/)
+const uploadDir${isTs ? ': string' : ''} = process.env.UPLOAD_DIR || fileURLToPath(new URL('../../uploads', import.meta.url));
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
+  destination: function (_req, _file, cb) {
     cb(null, uploadDir);
   },
-  filename: function (req, file, cb) {
+  filename: function (_req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
@@ -223,7 +302,11 @@ export const upload = multer({
   storage: storage,
   limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
 });
+
+export default upload;
 `;
+
+    files[`src/middlewares/multer.${ext}`] = `export { upload, default } from '../config/multer${importExt}';\n`;
   }
 
   // 9. Utilities: Nodemailer (conditional)
@@ -262,6 +345,7 @@ export async function sendEmail({ to, subject, html }${isTs ? ': { to: string; s
   }
   indexCode += `import { connectDB } from './src/config/db${importExt}';\n`;
   indexCode += `import apiRoutes from './src/routes/api.routes${importExt}';\n`;
+  indexCode += `import { csrfProtection } from './src/middlewares/csrf${importExt}';\n`;
   indexCode += `import { errorHandler } from './src/middlewares/errorHandler${importExt}';\n\n`;
 
   indexCode += `const app = express();\n`;
@@ -275,14 +359,8 @@ export async function sendEmail({ to, subject, html }${isTs ? ': { to: string; s
   indexCode += `app.use(express.json());\n`;
   indexCode += `app.use(express.urlencoded({ extended: true }));\n\n`;
 
-  indexCode += `// Cross-origin forms cannot supply this header. Only allow trusted origins in CORS.
-app.use('/api', (req, res, next) => {
-  res.set('Cache-Control', 'no-store');
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && req.get('X-Requested-With') !== 'mern-client') {
-    res.status(403).json({ message: 'Missing API request header.' }); return;
-  }
-  next();
-});\n`;
+  indexCode += `// API Security: Cross-origin forms cannot supply this header. Only allow trusted origins in CORS.\n`;
+  indexCode += `app.use('/api', csrfProtection);\n\n`;
 
   indexCode += `// API Routes\n`;
   indexCode += `app.use('/api', apiRoutes);\n\n`;
@@ -299,7 +377,7 @@ app.use('/api', (req, res, next) => {
 
   files[`index.${ext}`] = indexCode;
 
-  // 11. .env.example
+  // 11. .env.example and .env
   let envExample = `# Server Configuration\nPORT=5000\nNODE_ENV=development\n\n# Database\nMONGO_URI=mongodb://127.0.0.1:27017/${databaseName}\n`;
   if (hasCloudinary) {
     envExample += `\n# Cloudinary\nCLOUDINARY_CLOUD_NAME=your_cloud_name\nCLOUDINARY_API_KEY=your_api_key\nCLOUDINARY_API_SECRET=your_api_secret\n`;
@@ -307,8 +385,16 @@ app.use('/api', (req, res, next) => {
   if (hasNodemailer) {
     envExample += `\n# Nodemailer SMTP\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_USER=your_email@gmail.com\nSMTP_PASS=your_app_password\nEMAIL_FROM="App Support" <no-reply@app.com>\n`;
   }
-  files['.env.example'] = envExample + '\n# Generate a unique secret per environment (32 bytes or more).\nJWT_SECRET=\n';
-  files['.env'] = envExample.split('\n# Cloudinary')[0].split('\n# Nodemailer')[0] + '\nJWT_SECRET=' + randomBytes(48).toString('hex') + '\n';
+
+  let envFile = envExample.split('\n# Cloudinary')[0].split('\n# Nodemailer')[0];
+
+  if (hasAuth) {
+    envExample += '\n# Generate a unique secret per environment (32 bytes or more).\nJWT_SECRET=\n';
+    envFile += '\nJWT_SECRET=' + randomBytes(48).toString('hex') + '\n';
+  }
+
+  files['.env.example'] = envExample;
+  files['.env'] = envFile;
 
   await writeFileTree(targetDir, files);
 }

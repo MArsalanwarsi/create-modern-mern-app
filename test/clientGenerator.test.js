@@ -32,6 +32,7 @@ describe('clientGenerator', () => {
 
     // Check package.json dependencies
     const pkg = JSON.parse(fs.readFileSync(path.join(testDir, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
     assert.ok(pkg.dependencies['react-router-dom']);
     assert.ok(pkg.dependencies['@reduxjs/toolkit']);
     assert.ok(pkg.dependencies['react-toastify']);
@@ -63,6 +64,7 @@ describe('clientGenerator', () => {
     assert.ok(!viteConfig.includes('react({,'));
 
     const pkg = JSON.parse(fs.readFileSync(path.join(jsDir, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.engines?.node, '>=20.12.0');
     assert.ok(pkg.devDependencies['babel-plugin-react-compiler']);
   });
 
@@ -82,5 +84,225 @@ describe('clientGenerator', () => {
 
     const viteConfig = fs.readFileSync(path.join(tsShadcnDir, 'vite.config.ts'), 'utf8');
     assert.ok(!viteConfig.includes('react({,'));
+  });
+
+  it('eliminates inline styles and dead Card component while adding official shadcn primitives and blocks', async () => {
+    const modernDir = path.join(testDir, 'modern-client');
+    fs.mkdirSync(modernDir, { recursive: true });
+
+    await generateClient(modernDir, {
+      projectName: 'modern-app',
+      variant: 'ts',
+      styling: 'shadcn',
+      auth: true
+    });
+
+    // Dead Card does not exist, official ui/card exists
+    assert.strictEqual(fs.existsSync(path.join(modernDir, 'src/components/Card.tsx')), false);
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/ui/card.tsx')));
+
+    // New UI primitives exist
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/ui/badge.tsx')));
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/ui/table.tsx')));
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/ui/avatar.tsx')));
+
+    // Official blocks exist
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/login-form.tsx')));
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/signup-form.tsx')));
+    assert.ok(fs.existsSync(path.join(modernDir, 'src/components/auth/AuthForm.tsx')));
+
+    // Overview includes 4 KPI metrics and transactions table
+    const overview = fs.readFileSync(path.join(modernDir, 'src/pages/dashboard/Overview.tsx'), 'utf8');
+    assert.ok(overview.includes('Total Revenue'));
+    assert.ok(overview.includes('$45,231.89'));
+    assert.ok(overview.includes('Subscriptions'));
+    assert.ok(overview.includes('+2,350'));
+    assert.ok(overview.includes('Sales'));
+    assert.ok(overview.includes('+12,234'));
+    assert.ok(overview.includes('Active Now'));
+    assert.ok(overview.includes('+573'));
+    assert.ok(overview.includes('Transactions'));
+
+    // index.css has no hardcoded hex overrides
+    const indexCss = fs.readFileSync(path.join(modernDir, 'src/index.css'), 'utf8');
+    assert.ok(!indexCss.includes('#f8fafc'));
+    assert.ok(!indexCss.includes('#0f172a'));
+    assert.ok(indexCss.includes('@layer base'));
+    assert.ok(indexCss.includes('@apply bg-background text-foreground;'));
+
+    // SidebarSlice uses safe optional chaining for user
+    const sidebar = fs.readFileSync(path.join(modernDir, 'src/layout/slices/Sidebar.tsx'), 'utf8');
+    assert.ok(sidebar.includes("user?.name || 'Workspace Member'"));
+    assert.ok(sidebar.includes("user?.email || 'member@example.com'"));
+    assert.ok(!sidebar.includes('{user.name}'));
+    assert.ok(!sidebar.includes('{user.email}'));
+    assert.ok(sidebar.includes('export function Sidebar({ user }: { user?: WorkspaceUser | null })'));
+
+    // TS block forms omit native onSubmit to avoid prop collision
+    const loginForm = fs.readFileSync(path.join(modernDir, 'src/components/login-form.tsx'), 'utf8');
+    assert.ok(loginForm.includes("Omit<React.ComponentPropsWithoutRef<'div'>, 'onSubmit'>"));
+    const signupForm = fs.readFileSync(path.join(modernDir, 'src/components/signup-form.tsx'), 'utf8');
+    assert.ok(signupForm.includes("Omit<React.ComponentPropsWithoutRef<'div'>, 'onSubmit'>"));
+
+    // No inline styles across src/ files
+    function checkNoInlineStyles(dir) {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          checkNoInlineStyles(fullPath);
+        } else if (/\.(jsx?|tsx?)$/.test(entry.name)) {
+          const content = fs.readFileSync(fullPath, 'utf8');
+          assert.ok(!content.includes('style={{'), `File ${entry.name} should not contain inline styles`);
+        }
+      }
+    }
+    checkNoInlineStyles(path.join(modernDir, 'src'));
+  });
+
+  it('scaffolds auth: false correctly without auth routes or navbar auth buttons', async () => {
+    const noAuthDir = path.join(testDir, 'noauth-client');
+    fs.mkdirSync(noAuthDir, { recursive: true });
+
+    await generateClient(noAuthDir, {
+      projectName: 'noauth-app',
+      variant: 'ts',
+      auth: false,
+      styling: 'shadcn'
+    });
+
+    const appContent = fs.readFileSync(path.join(noAuthDir, 'src/App.tsx'), 'utf8');
+    assert.ok(!appContent.includes('/login'));
+    assert.ok(!appContent.includes('/signup'));
+    assert.ok(!appContent.includes('/dashboard'));
+    assert.ok(!appContent.includes('AuthenticatedDashboard'));
+    assert.ok(!appContent.includes('Account'));
+
+    const navbarContent = fs.readFileSync(path.join(noAuthDir, 'src/layout/slices/Navbar.tsx'), 'utf8');
+    assert.ok(!navbarContent.includes('/login'));
+    assert.ok(!navbarContent.includes('/signup'));
+    assert.ok(!navbarContent.includes('/dashboard'));
+
+    // Verify dead auth/dashboard files are pruned
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/components/login-form.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/components/LoginForm.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/components/signup-form.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/components/SignupForm.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/components/auth/AuthForm.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/layout/DashboardLayout.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/layout/slices/Sidebar.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/layout/slices/Header.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/pages/dashboard/Overview.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/pages/dashboard/Settings.tsx')), false);
+    assert.strictEqual(fs.existsSync(path.join(noAuthDir, 'src/pages/dashboard')), false);
+
+    // Verify UI primitives remain intact
+    assert.ok(fs.existsSync(path.join(noAuthDir, 'src/components/ui/button.tsx')));
+    assert.ok(fs.existsSync(path.join(noAuthDir, 'components.json')));
+  });
+
+  it('scaffolds styling: css correctly with plain CSS and without Tailwind dependencies', async () => {
+    const cssDir = path.join(testDir, 'css-client');
+    fs.mkdirSync(cssDir, { recursive: true });
+
+    await generateClient(cssDir, {
+      projectName: 'css-app',
+      variant: 'js',
+      styling: 'css',
+      auth: false
+    });
+
+    const pkg = JSON.parse(fs.readFileSync(path.join(cssDir, 'package.json'), 'utf8'));
+    assert.strictEqual(pkg.devDependencies.tailwindcss, undefined);
+    assert.strictEqual(pkg.devDependencies['@tailwindcss/vite'], undefined);
+    assert.strictEqual(fs.existsSync(path.join(cssDir, 'components.json')), false);
+
+    const viteConfig = fs.readFileSync(path.join(cssDir, 'vite.config.js'), 'utf8');
+    assert.ok(!viteConfig.includes('tailwindcss()'));
+  });
+
+  it('scaffolds zero-dependency fallback Overview for non-shadcn styling with auth', async () => {
+    const tailwindDir = path.join(testDir, 'tw-auth-client');
+    fs.mkdirSync(tailwindDir, { recursive: true });
+    await generateClient(tailwindDir, {
+      projectName: 'tw-app',
+      variant: 'ts',
+      styling: 'tailwind',
+      auth: true
+    });
+    const overviewTsx = path.join(tailwindDir, 'src/pages/dashboard/Overview.tsx');
+    assert.ok(fs.existsSync(overviewTsx));
+    const content = fs.readFileSync(overviewTsx, 'utf8');
+    assert.ok(content.includes('Total Revenue'));
+    assert.ok(content.includes('$45,231.89'));
+    assert.ok(content.includes('Subscriptions'));
+    assert.ok(content.includes('+2,350'));
+    assert.ok(content.includes('Sales'));
+    assert.ok(content.includes('+12,234'));
+    assert.ok(content.includes('Active Now'));
+    assert.ok(content.includes('+573'));
+    assert.ok(content.includes('Transactions'));
+    // Zero external UI primitives, Radix, or lucide-react imports
+    assert.ok(!content.includes('lucide-react'));
+    assert.ok(!content.includes('@radix-ui'));
+    assert.ok(!content.includes('../../components/ui'));
+  });
+
+  it('resolves all relative imports cleanly across all 24 client permutations', async () => {
+    const languages = ['js', 'ts', 'js-compiler', 'ts-compiler'];
+    const stylings = ['shadcn', 'tailwind', 'css'];
+    const authOpts = [true, false];
+
+    for (const lang of languages) {
+      for (const styling of stylings) {
+        for (const auth of authOpts) {
+          const dir = path.join(testDir, `perm-${lang}-${styling}-${auth}`);
+          fs.mkdirSync(dir, { recursive: true });
+          await generateClient(dir, {
+            projectName: 'perm-app',
+            language: lang,
+            styling,
+            auth
+          });
+
+          if (!auth) {
+            assert.strictEqual(
+              fs.existsSync(path.join(dir, 'src/pages/dashboard')),
+              false,
+              `src/pages/dashboard should not exist under auth: false [${lang}, ${styling}]`
+            );
+          }
+
+          const checkDir = (curr) => {
+            for (const ent of fs.readdirSync(curr, { withFileTypes: true })) {
+              const p = path.join(curr, ent.name);
+              if (ent.isDirectory()) {
+                checkDir(p);
+              } else if (/\.(jsx?|tsx?)$/.test(ent.name)) {
+                const code = fs.readFileSync(p, 'utf8');
+                const matches = code.matchAll(/from\s+['"](\.[^'"]+)['"]/g);
+                for (const m of matches) {
+                  const spec = m[1];
+                  const base = path.resolve(path.dirname(p), spec);
+                  const ex = [
+                    base,
+                    base + '.js',
+                    base + '.jsx',
+                    base + '.ts',
+                    base + '.tsx',
+                    path.join(base, 'index.js'),
+                    path.join(base, 'index.jsx'),
+                    path.join(base, 'index.ts'),
+                    path.join(base, 'index.tsx')
+                  ].some(c => fs.existsSync(c));
+                  assert.ok(ex, `Unresolved import "${spec}" in ${path.relative(dir, p)} under [${lang}, ${styling}, auth:${auth}]`);
+                }
+              }
+            }
+          };
+          checkDir(path.join(dir, 'src'));
+        }
+      }
+    }
   });
 });

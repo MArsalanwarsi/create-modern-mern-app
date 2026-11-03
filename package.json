@@ -1,6 +1,6 @@
 {
   "name": "create-modern-mern-app",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Interactive CLI generator for production-ready MERN stack apps with Vite, React, Express, and MongoDB",
   "type": "module",
   "bin": {

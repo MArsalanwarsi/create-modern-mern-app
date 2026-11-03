@@ -16,7 +16,8 @@ jobs:
         starter: [default, tailwind, minimal]
     services:
       mongo:
-        image: mongo:8
+        # MongoDB 8.x can abort on hosted runner kernels (SERVER-121912).
+        image: mongo:7.0.45@sha256:8bb4442761a63a8dda452744082cdac9644b429807eb977b42324a63cef59ca4
         ports:
           - 27017/tcp
         options: >-

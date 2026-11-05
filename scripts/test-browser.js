@@ -51,8 +51,11 @@ const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost').pathname;
   if (url.startsWith('/api/')) {
     app(req, res);
+  } else if (url === '/avatars/shadcn.jpg') {
+    res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+    res.end(readFileSync(path.join(dist, 'avatars/shadcn.jpg')));
   } else if (assets.has(url)) {
-    res.writeHead(200, { 'Content-Type': url.endsWith('.js') ? 'text/javascript' : 'text/css' });
+    res.writeHead(200, { 'Content-Type': url.endsWith('.js') ? 'text/javascript' : url.endsWith('.woff2') ? 'font/woff2' : 'text/css' });
     res.end(assets.get(url));
   } else if (['/', '/login', '/signup', '/dashboard', '/dashboard/settings', '/dashboard/members'].includes(url)) {
     res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' });
@@ -88,16 +91,17 @@ try {
   await page.locator('#name').fill('Browser Member');
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
-  await page.getByRole('button', { name: 'Sign Up', exact: true }).click();
-  await page.getByRole('button', { name: 'Sign out' }).waitFor();
-  await page.getByRole('heading', { name: 'Welcome, Browser Member' }).waitFor();
+  await page.locator('#confirm-password').fill(password);
+  await page.getByRole('button', { name: 'Create Account', exact: true }).click();
+  await page.getByText('Acme Inc.', { exact: true }).waitFor();
+  await page.getByText('Total Revenue', { exact: true }).waitFor();
   assert.ok((await page.context().cookies()).some(cookie => cookie.httpOnly && cookie.path === '/api'));
-  assert.equal(await page.getByRole('link', { name: 'View members' }).count(), 0);
-  await page.goto(origin + '/dashboard/members');
+  await page.getByRole('button', { name: 'Team', exact: true }).click();
+  await page.waitForURL(origin + '/dashboard/members');
   await page.getByRole('alert').filter({ hasText: 'Administrator access required' }).waitFor();
   await mongoose.model('User').updateOne({ email }, { role: 'admin' });
   await page.goto(origin + '/dashboard');
-  await page.getByRole('link', { name: 'View members' }).click();
+  await page.getByRole('button', { name: 'Team', exact: true }).click();
   await page.getByRole('row').filter({ hasText: email }).filter({ hasText: 'admin' }).waitFor();
   assert.ok(requests.has(dashboard) && requests.has(overview));
   assert.ok(!requests.has(settings));
@@ -115,14 +119,15 @@ try {
   await page.getByRole('heading', { name: 'Settings', exact: true }).waitFor();
   assert.equal(page.url(), origin + '/dashboard/settings');
   assert.ok(requests.has(replacement));
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByRole('button', { name: /Browser Member/ }).click();
+  await page.getByRole('menuitem', { name: 'Log out' }).click();
   await page.waitForURL(origin + '/login');
   await page.goto(origin + '/dashboard');
   await page.waitForURL(origin + '/login');
   await page.locator('#email').fill(email);
   await page.locator('#password').fill(password);
   await page.getByRole('button', { name: 'Login', exact: true }).click();
-  await page.getByRole('link', { name: 'View members' }).waitFor();
+  await page.getByText('Total Revenue', { exact: true }).waitFor();
   assert.deepEqual(errors, []);
   console.log('Chrome passed: real signup, login, logout, member denial, admin directory, deferred routes and stale-chunk recovery.');
 } finally {

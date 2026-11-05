@@ -26,6 +26,8 @@ npx create-modern-mern-app@latest portal --yes --language ts --styling tailwind 
 npx create-modern-mern-app@latest brochure --yes --language js --styling css --no-auth --no-install
 ```
 
+The shadcn preset includes the New York [login-01](https://ui.shadcn.com/view/new-york-v4/login-01), [signup-01](https://ui.shadcn.com/view/new-york-v4/signup-01) and [dashboard-01](https://ui.shadcn.com/view/new-york-v4/dashboard-01) blocks. Its dashboard uses the registry’s demonstration metrics, chart and table. The account menu shows the signed-in user, **Log out** ends the session, and **Team** opens the admin-only database-backed members directory. Google sign-in and password recovery are visual placeholders from the registry. The API enforces a 12-character signup minimum.
+
 ## What the wizard installs
 
 | Included in every app | Optional |

@@ -174,7 +174,7 @@ export function DashboardLayout({ user, onLogout }${isTs ? ': { user: { name: st
 
   }
 
-  files[`src/pages/dashboard/Overview.${ext}`] = `import { Link, useOutletContext } from 'react-router-dom';
+  if (styling !== 'shadcn') files[`src/pages/dashboard/Overview.${ext}`] = `import { Link, useOutletContext } from 'react-router-dom';
 
 export function Overview() {
   const { user } = useOutletContext${isTs ? '<{ user: { name: string; email: string; role: string } }>' : ''}();

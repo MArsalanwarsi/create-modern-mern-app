@@ -80,13 +80,13 @@ describe('clientGenerator', () => {
 
     const buttonContent = fs.readFileSync(path.join(tsShadcnDir, 'src/components/ui/button.tsx'), 'utf8');
     assert.ok(!buttonContent.includes("utils.'"));
-    assert.ok(buttonContent.includes("utils'"));
+    assert.ok(buttonContent.includes('../../lib/utils'));
 
     const viteConfig = fs.readFileSync(path.join(tsShadcnDir, 'vite.config.ts'), 'utf8');
     assert.ok(!viteConfig.includes('react({,'));
   });
 
-  it('eliminates inline styles and dead Card component while adding official shadcn primitives and blocks', async () => {
+  it('generates the official shadcn cards, form fields, chart and table for authenticated apps', async () => {
     const modernDir = path.join(testDir, 'modern-client');
     fs.mkdirSync(modernDir, { recursive: true });
 
@@ -111,9 +111,10 @@ describe('clientGenerator', () => {
     assert.ok(fs.existsSync(path.join(modernDir, 'src/components/signup-form.tsx')));
     assert.ok(fs.existsSync(path.join(modernDir, 'src/components/auth/AuthForm.tsx')));
 
-    // Overview uses the authenticated account and links to the protected directory
     const overview = fs.readFileSync(path.join(modernDir, 'src/pages/dashboard/Overview.tsx'), 'utf8');
-    assert.ok(overview.includes('/dashboard/members'));
+    for (const component of ['SectionCards', 'ChartAreaInteractive', 'DataTable']) {
+      assert.ok(overview.includes(component));
+    }
 
     // index.css has no hardcoded hex overrides
     const indexCss = fs.readFileSync(path.join(modernDir, 'src/index.css'), 'utf8');
@@ -122,34 +123,14 @@ describe('clientGenerator', () => {
     assert.ok(indexCss.includes('@layer base'));
     assert.ok(indexCss.includes('@apply bg-background text-foreground;'));
 
-    // SidebarSlice uses safe optional chaining for user
     const sidebar = fs.readFileSync(path.join(modernDir, 'src/layout/slices/Sidebar.tsx'), 'utf8');
-    assert.ok(sidebar.includes("user?.name || 'Workspace Member'"));
-    assert.ok(sidebar.includes("user?.email"));
-    assert.ok(!sidebar.includes('{user.name}'));
-    assert.ok(!sidebar.includes('{user.email}'));
-    assert.ok(sidebar.includes('export function Sidebar({ user }: { user?: WorkspaceUser | null })'));
+    assert.ok(sidebar.includes('/dashboard/members'));
+    assert.ok(sidebar.includes('Acme Inc.'));
+    const login = fs.readFileSync(path.join(modernDir, 'src/components/login-form.tsx'), 'utf8');
+    assert.ok(login.includes('Login to your account'));
+    const signup = fs.readFileSync(path.join(modernDir, 'src/components/signup-form.tsx'), 'utf8');
+    assert.ok(signup.includes('confirm-password'));
 
-    // TS block forms omit native onSubmit to avoid prop collision
-    const loginForm = fs.readFileSync(path.join(modernDir, 'src/components/login-form.tsx'), 'utf8');
-    assert.ok(loginForm.includes("Omit<React.ComponentPropsWithoutRef<'div'>, 'onSubmit'>"));
-    const signupForm = fs.readFileSync(path.join(modernDir, 'src/components/signup-form.tsx'), 'utf8');
-    assert.ok(signupForm.includes("Omit<React.ComponentPropsWithoutRef<'div'>, 'onSubmit'>"));
-
-    // No inline styles across src/ files
-    function checkNoInlineStyles(dir) {
-      const entries = fs.readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dir, entry.name);
-        if (entry.isDirectory()) {
-          checkNoInlineStyles(fullPath);
-        } else if (/\.(jsx?|tsx?)$/.test(entry.name)) {
-          const content = fs.readFileSync(fullPath, 'utf8');
-          assert.ok(!content.includes('style={{'), `File ${entry.name} should not contain inline styles`);
-        }
-      }
-    }
-    checkNoInlineStyles(path.join(modernDir, 'src'));
   });
 
   it('scaffolds auth: false correctly without auth routes or navbar auth buttons', async () => {

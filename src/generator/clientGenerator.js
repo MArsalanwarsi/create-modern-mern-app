@@ -208,6 +208,7 @@ export function cn(...inputs${isTs ? ': import("clsx").ClassValue[]' : ''}) {
   if (resolvedStyling === 'shadcn') {
     files['src/index.css'] = `@import "tailwindcss";
 @import "./styles/shadcn.css";
+@import "@fontsource-variable/geist/index.css";
 
 @layer base {
   * {
@@ -215,7 +216,7 @@ export function cn(...inputs${isTs ? ': import("clsx").ClassValue[]' : ''}) {
   }
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: "Geist Variable", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

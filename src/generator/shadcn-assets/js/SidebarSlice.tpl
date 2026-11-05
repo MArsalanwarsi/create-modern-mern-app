@@ -1,61 +1,177 @@
-import { Link, useLocation } from 'react-router-dom'
-import { Home, LayoutDashboard, PanelsTopLeft, Settings } from 'lucide-react'
+"use client"
+import * as React from "react"
 import {
-  Sidebar as SidebarRoot,
+  IconCamera,
+  IconChartBar,
+  IconDashboard,
+  IconDatabase,
+  IconFileAi,
+  IconFileDescription,
+  IconFileWord,
+  IconFolder,
+  IconHelp,
+  IconInnerShadowTop,
+  IconListDetails,
+  IconReport,
+  IconSearch,
+  IconSettings,
+  IconUsers,
+} from "@tabler/icons-react"
+import { NavDocuments } from "../../components/nav-documents"
+import { NavMain } from "../../components/nav-main"
+import { NavSecondary } from "../../components/nav-secondary"
+import { NavUser } from "../../components/nav-user"
+import {
+  Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
-} from '../../components/ui/sidebar'
-const links = [
-  { path: '/dashboard', title: 'Overview', Icon: LayoutDashboard },
-  { path: '/dashboard/settings', title: 'Settings', Icon: Settings },
-  { path: '/', title: 'Landing page', Icon: Home },
-]
-export function Sidebar({ user }) {
-  const { pathname } = useLocation()
-  const { setOpenMobile } = useSidebar()
+} from "../../components/ui/sidebar"
+const data = {
+  user: {
+    name: "shadcn",
+    email: "m@example.com",
+    avatar: "/avatars/shadcn.jpg",
+  },
+  navMain: [
+    {
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: IconDashboard,
+    },
+    {
+      title: "Lifecycle",
+      url: "#",
+      icon: IconListDetails,
+    },
+    {
+      title: "Analytics",
+      url: "#",
+      icon: IconChartBar,
+    },
+    {
+      title: "Projects",
+      url: "#",
+      icon: IconFolder,
+    },
+    {
+      title: "Team",
+      url: "/dashboard/members",
+      icon: IconUsers,
+    },
+  ],
+  navClouds: [
+    {
+      title: "Capture",
+      icon: IconCamera,
+      isActive: true,
+      url: "#",
+      items: [
+        {
+          title: "Active Proposals",
+          url: "#",
+        },
+        {
+          title: "Archived",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Proposal",
+      icon: IconFileDescription,
+      url: "#",
+      items: [
+        {
+          title: "Active Proposals",
+          url: "#",
+        },
+        {
+          title: "Archived",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Prompts",
+      icon: IconFileAi,
+      url: "#",
+      items: [
+        {
+          title: "Active Proposals",
+          url: "#",
+        },
+        {
+          title: "Archived",
+          url: "#",
+        },
+      ],
+    },
+  ],
+  navSecondary: [
+    {
+      title: "Settings",
+      url: "/dashboard/settings",
+      icon: IconSettings,
+    },
+    {
+      title: "Get Help",
+      url: "#",
+      icon: IconHelp,
+    },
+    {
+      title: "Search",
+      url: "#",
+      icon: IconSearch,
+    },
+  ],
+  documents: [
+    {
+      name: "Data Library",
+      url: "#",
+      icon: IconDatabase,
+    },
+    {
+      name: "Reports",
+      url: "#",
+      icon: IconReport,
+    },
+    {
+      name: "Word Assistant",
+      url: "#",
+      icon: IconFileWord,
+    },
+  ],
+}
+export function AppSidebar({ user, onLogout, ...props }) {
   return (
-    <SidebarRoot variant="inset">
-      <SidebarHeader className="p-4">
-        <Link to="/" className="flex items-center gap-2 font-semibold">
-          <PanelsTopLeft
-            aria-hidden="true"
-            className="size-6 rounded bg-primary p-1 text-primary-foreground"
-          />{' '}
-          Workspace
-        </Link>
+    <Sidebar collapsible="offcanvas" {...props}>
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              className="data-[slot=sidebar-menu-button]:p-1.5!"
+            >
+              <a href="#">
+                <IconInnerShadowTop className="size-5!" />
+                <span className="text-base font-semibold">Acme Inc.</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarMenu>
-            {links.map(({ path, title, Icon }) => (
-              <SidebarMenuItem key={path}>
-                <SidebarMenuButton asChild isActive={pathname === path}>
-                  <Link
-                    to={path}
-                    aria-current={pathname === path ? 'page' : undefined}
-                    onClick={() => setOpenMobile(false)}
-                  >
-                    <Icon aria-hidden="true" />
-                    {title}
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
+        <NavMain items={data.navMain} />
+        <NavDocuments items={data.documents} />
+        <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
-      <SidebarFooter className="border-t p-4">
-        <span className="truncate text-sm font-medium">{user?.name || 'Workspace Member'}</span>
-        <span className="truncate text-xs text-muted-foreground">{user?.email}</span>
+      <SidebarFooter>
+        <NavUser user={{ ...data.user, ...user }} onLogout={onLogout} />
       </SidebarFooter>
-    </SidebarRoot>
+    </Sidebar>
   )
 }

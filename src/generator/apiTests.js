@@ -20,7 +20,7 @@ after(() => new Promise(resolve => server.close(resolve)));
 test('health responds with JSON and security headers', async () => {
   const response = await fetch(url + '/health');
   assert.equal(response.status, 200);
-  assert.equal((await response.json()).status, 'online');
+  assert.equal((await response.json()).status, 'ok');
   assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
   assert.equal(response.headers.get('x-powered-by'), null);
 });

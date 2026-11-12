@@ -159,9 +159,10 @@ export default cloudinary;
     files[`src/controllers/api.controller.${ext}`] = `import { getUsers as fetchUsers } from '../services/user.service${importExt}';
 ${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
   res.json({
-    status: 'online',
+    status: 'ok',
     message: 'Backend server is running smoothly',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime())
   });
 }
 
@@ -177,9 +178,10 @@ export async function getUsers(req${isTs ? ': Request' : ''}, res${isTs ? ': Res
   } else {
     files[`src/controllers/api.controller.${ext}`] = `${isTs ? "import type { Request, Response } from 'express';\n\n" : ''}export function getHealthCheck(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
   res.json({
-    status: 'online',
+    status: 'ok',
     message: 'Backend server is running smoothly',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    uptime: Math.floor(process.uptime())
   });
 }
 `;
@@ -230,10 +232,10 @@ export default router;
   // 8. Middlewares
   files[`src/middlewares/errorHandler.${ext}`] = `${isTs ? "import type { Request, Response, NextFunction } from 'express';\n\n" : ''}export function errorHandler(err${isTs ? ': any' : ''}, _req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, _next${isTs ? ': NextFunction' : ''}) {
   console.error('Unhandled error:', err);
-  const status = err.status || 500;
+  const status = err.status || err.statusCode || 500;
   res.status(status).json({
     success: false,
-    message: (status < 500 ? err.message : 'Internal Server Error')
+    message: (status < 500 && err.message ? err.message : 'Internal Server Error')
   });
 }
 `;
@@ -326,24 +328,31 @@ export async function sendEmail({ to, subject, html }${isTs ? ': { to: string; s
   indexCode += `import { csrfProtection } from './src/middlewares/csrf${importExt}';\n`;
   indexCode += `import { errorHandler } from './src/middlewares/errorHandler${importExt}';\n\n`;
 
-  indexCode += `export const app = express();\napp.use(helmet());\n`;
-  if (hasAuth) indexCode += `if (process.env.TRUSTED_PROXY_CIDRS) app.set('trust proxy', process.env.TRUSTED_PROXY_CIDRS);\n`;
+  indexCode += `export const app = express();\n`;
   indexCode += `const PORT = process.env.PORT || 5000;\n\n`;
 
+  indexCode += `// 1. Core Security & Ingress\n`;
+  indexCode += `app.use(helmet());\n`;
+  if (hasAuth) indexCode += `if (process.env.TRUSTED_PROXY_CIDRS) app.set('trust proxy', process.env.TRUSTED_PROXY_CIDRS);\n`;
+  indexCode += `\n`;
+
   if (hasCors) {
+    indexCode += `// 2. CORS Configuration\n`;
     indexCode += `app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000', credentials: true }));\n\n`;
   }
 
+  indexCode += `// 3. Request Parsing\n`;
   indexCode += `app.use(express.json());\n`;
   indexCode += `app.use(express.urlencoded({ extended: true }));\n\n`;
 
-  indexCode += `// API Security: Cross-origin forms cannot supply this header. Only allow trusted origins in CORS.\n`;
-  indexCode += `app.use('/api', csrfProtection);\n\n`;
-
+  indexCode += `// 4. API Routes & CSRF Protection\n`;
+  indexCode += `app.use('/api', csrfProtection);\n`;
   indexCode += `app.use('/api', apiRoutes);\n\n`;
 
+  indexCode += `// 5. Global Error Handling\n`;
   indexCode += `app.use(errorHandler);\n\n`;
 
+  indexCode += `// 6. Server Initialization\n`;
   indexCode += `if (import.meta.main) {\n  await connectDB();\n`;
   if (hasAuth) indexCode += `  await prepareLoginLimit();\n`;
   indexCode += `  app.listen(PORT, () => {\n`;

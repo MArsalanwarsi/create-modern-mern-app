@@ -159,28 +159,72 @@ export const getUsersList = getUsers;
   // 5. Middlewares: requireToken and requireRole
   files[`src/middlewares/requireToken.${ext}`] = `${types}import { cookieName, verifyToken } from '../config/session${importExt}';
 import { getUserById } from '../services/user.service${importExt}';
-
+${isTs ? `
+declare global {
+  namespace Express {
+    interface Request {
+      user?: Record<string, any>;
+    }
+  }
+}
+` : ''}
 export const requireToken${handler} = async (req, res, next) => {
-  const cookie = (req.headers.cookie || '').split(';').map(value => value.trim()).find(value => value.startsWith(cookieName + '='));
+  const authHeader = req.headers.authorization;
+  let token = (typeof authHeader === 'string' && authHeader.startsWith('Bearer '))
+    ? authHeader.slice(7).trim()
+    : null;
+
+  if (!token) {
+    const cookie = (req.headers.cookie || '').split(';').map(value => value.trim()).find(value => value.startsWith(cookieName + '='));
+    if (cookie) token = cookie.slice(cookieName.length + 1);
+  }
+
+  if (!token) {
+    res.status(401).json({ message: 'Sign in to continue.' });
+    return;
+  }
+
   let subject${isTs ? ': string' : ''};
   try {
-    const payload = verifyToken(cookie?.slice(cookieName.length + 1) || '');
-    if (typeof payload !== 'object' || typeof payload.sub !== 'string' || !/^[a-f0-9]{24}$/i.test(payload.sub)) throw new Error();
-    subject = payload.sub;
+    const payload = verifyToken(token);
+    const rawSub = typeof payload === 'object' && payload !== null
+      ? (payload.sub || ${isTs ? '(payload as Record<string, any>).id' : 'payload.id'})
+      : null;
+    if (typeof rawSub !== 'string' || !/^[a-f0-9]{24}$/i.test(rawSub)) throw new Error();
+    subject = rawSub;
   } catch {
     res.status(401).json({ message: 'Sign in to continue.' });
     return;
   }
+
   const user = await getUserById(subject);
-  if (!user) { res.status(401).json({ message: 'Account no longer exists.' }); return; }
+  if (!user) {
+    res.status(401).json({ message: 'Account no longer exists.' });
+    return;
+  }
+
+  req.user = user;
   res.locals.user = user;
   next();
 };
 `;
 
-  files[`src/middlewares/requireRole.${ext}`] = `${types}export function requireRole(role${isTs ? ': string' : ''})${handler} {
-  return (_req, res, next) => {
-    if (res.locals.user?.role !== role) { res.status(403).json({ message: 'Administrator access required.' }); return; }
+  files[`src/middlewares/requireRole.${ext}`] = `${types}export function requireRole(roles${isTs ? ': string | string[]' : ''})${handler} {
+  const allowed = Array.isArray(roles) ? roles : [roles];
+  return (req, res, next) => {
+    const user = req.user || res.locals.user;
+    if (!user) {
+      res.status(401).json({ message: 'Sign in to continue.' });
+      return;
+    }
+    if (!allowed.includes(user.role)) {
+      if (allowed.includes('admin')) {
+        res.status(403).json({ message: 'Administrator access required.' });
+        return;
+      }
+      res.status(403).json({ message: \`Access denied: requires one of the following roles: \${allowed.join(', ')}.\` });
+      return;
+    }
     next();
   };
 }
@@ -190,40 +234,69 @@ export const requireToken${handler} = async (req, res, next) => {
   files[`src/controllers/auth.controller.${ext}`] = `${ctrlTypes}import { registerUser, authenticateUser } from '../services/auth.service${importExt}';
 import { cookieName, cookieOptions } from '../config/session${importExt}';
 
-export const authenticate = (signup${isTs ? ': boolean' : ''})${handler} => async (req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, next${isTs ? ': NextFunction' : ''}) => {
+export async function signup(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, next${isTs ? ': NextFunction' : ''})${isTs ? ': Promise<void>' : ''} {
   const { name, email, password } = req.body ?? {};
   if (
+    typeof name !== 'string' || !name.trim() || name.trim().length > 100 ||
     typeof email !== 'string' || email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) ||
-    typeof password !== 'string' || !password || Buffer.byteLength(password) > 72 ||
-    (signup && (password.length < 12 || typeof name !== 'string' || !name.trim() || name.trim().length > 100))
+    typeof password !== 'string' || password.length < 8 || Buffer.byteLength(password) > 72
   ) {
-    res.status(400).json({ message: 'Check your account details. New passwords require at least 12 characters and at most 72 bytes.' });
+    res.status(400).json({ message: 'Check your account details. New passwords require at least 8 characters and at most 72 bytes.' });
     return;
   }
 
   try {
-    const result = signup
-      ? await registerUser({ name: name.trim(), email, password })
-      : await authenticateUser({ email, password });
-
+    const result = await registerUser({ name: name.trim(), email: email.trim(), password });
     res.cookie(cookieName, result.token, { ...cookieOptions, maxAge: 3600000 });
-    res.status(signup ? 201 : 200).json({ user: result.user });
+    res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      user: result.user,
+      token: result.token
+    });
   } catch (err${isTs ? ': unknown' : ''}) {
     if (err && typeof err === 'object') {
 ${isTs ? `      const errorObj = err as { statusCode?: number; code?: number; message?: string };
       if (errorObj.statusCode === 409 || errorObj.code === 11000) {
         res.status(409).json({ message: errorObj.message || 'An account already uses that email.' });
         return;
-      }
-      if (errorObj.statusCode === 401) {
-        res.status(401).json({ message: errorObj.message || 'Invalid email or password.' });
-        return;
       }` : `      const status = 'statusCode' in err ? err.statusCode : undefined;
       const code = 'code' in err ? err.code : undefined;
       if (status === 409 || code === 11000) {
         res.status(409).json({ message: err.message || 'An account already uses that email.' });
         return;
-      }
+      }`}
+    }
+    next(err);
+  }
+}
+
+export async function login(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''}, next${isTs ? ': NextFunction' : ''})${isTs ? ': Promise<void>' : ''} {
+  const { email, password } = req.body ?? {};
+  if (
+    typeof email !== 'string' || !email.trim() || email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) ||
+    typeof password !== 'string' || !password || Buffer.byteLength(password) > 72
+  ) {
+    res.status(400).json({ message: 'Invalid email or password format.' });
+    return;
+  }
+
+  try {
+    const result = await authenticateUser({ email: email.trim(), password });
+    res.cookie(cookieName, result.token, { ...cookieOptions, maxAge: 3600000 });
+    res.status(200).json({
+      success: true,
+      message: 'User logged in successfully',
+      user: result.user,
+      token: result.token
+    });
+  } catch (err${isTs ? ': unknown' : ''}) {
+    if (err && typeof err === 'object') {
+${isTs ? `      const errorObj = err as { statusCode?: number; message?: string };
+      if (errorObj.statusCode === 401) {
+        res.status(401).json({ message: errorObj.message || 'Invalid email or password.' });
+        return;
+      }` : `      const status = 'statusCode' in err ? err.statusCode : undefined;
       if (status === 401) {
         res.status(401).json({ message: err.message || 'Invalid email or password.' });
         return;
@@ -231,10 +304,19 @@ ${isTs ? `      const errorObj = err as { statusCode?: number; code?: number; me
     }
     next(err);
   }
-};
+}
 
-export const signup${handler} = authenticate(true);
-export const login${handler} = authenticate(false);
+export function getMe(req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
+  const user = req.user || res.locals.user;
+  res.status(200).json({ success: true, user });
+}
+
+export function logout(_req${isTs ? ': Request' : ''}, res${isTs ? ': Response' : ''})${isTs ? ': void' : ''} {
+  res.clearCookie(cookieName, cookieOptions);
+  res.sendStatus(204);
+}
+
+export const authenticate = (isSignup${isTs ? ': boolean' : ''}) => (isSignup ? signup : login);
 `;
 
   // An atomic MongoDB update owns the counter and its reset time across replicas.
@@ -278,20 +360,21 @@ export const loginLimit = rateLimit({
   store: mode === 'mongo' ? store : undefined,
   message: { message: 'Too many attempts. Try again later.' }
 });
+
+export const authRateLimit = loginLimit;
 `;
 
   // 7. Auth Routes: src/routes/auth.routes.{js,ts}
   files[`src/routes/auth.routes.${ext}`] = `import { Router } from 'express';
 import { loginLimit } from '../config/loginLimit.js';
-import { authenticate } from '../controllers/auth.controller${importExt}';
+import { signup, login, getMe, logout } from '../controllers/auth.controller${importExt}';
 import { requireToken } from '../middlewares/requireToken${importExt}';
-import { cookieName, cookieOptions } from '../config/session${importExt}';
 
 const router = Router();
-router.post('/signup', loginLimit, authenticate(true));
-router.post('/login', loginLimit, authenticate(false));
-router.get('/me', requireToken, (_req, res) => res.json({ user: res.locals.user }));
-router.post('/logout', (_req, res) => { res.clearCookie(cookieName, cookieOptions); res.sendStatus(204); });
+router.post('/signup', loginLimit, signup);
+router.post('/login', loginLimit, login);
+router.get('/me', requireToken, getMe);
+router.post('/logout', logout);
 export default router;
 `;
 }

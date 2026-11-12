@@ -187,9 +187,13 @@ export default defineConfig({
         "baseColor": "slate",
         "cssVariables": true
       },
+      "iconLibrary": "lucide",
       "aliases": {
         "components": "@/components",
-        "utils": "@/lib/utils"
+        "utils": "@/lib/utils",
+        "ui": "@/components/ui",
+        "lib": "@/lib",
+        "hooks": "@/hooks"
       }
     }, null, 2);
   }
@@ -386,6 +390,124 @@ a:hover {
   font-weight: 600;
   margin: 0 0 0.5rem 0;
 }
+
+/* Standout Modern Landing Page (Asana Design System & Taste Guidelines) */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.hero-badge-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #10b981;
+}
+.hero-title {
+  font-size: clamp(2rem, 4vw + 1rem, 3.25rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+.hero-lead {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 65ch;
+}
+.cta-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+}
+.terminal-window {
+  border-radius: var(--radius);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+.terminal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--text-muted);
+}
+.terminal-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.terminal-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background-color: var(--border-color);
+}
+.terminal-body {
+  padding: 1rem 1.25rem;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (min-width: 768px) {
+  .feature-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.feature-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-primary);
+  padding: 1.25rem;
+  transition: border-color 0.15s ease-in-out;
+}
+.feature-card:hover {
+  border-color: var(--brand-primary);
+}
+.feature-card h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem 0;
+  color: var(--text-primary);
+}
+.feature-card p {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  margin: 0;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: var(--bg-secondary);
+  color: var(--text-muted);
+}
 `;
   }
 
@@ -496,7 +618,140 @@ export function WebsiteLayout() {
 `;
 
   // 10. Website Pages in src/pages/website/ (no inline styles)
-  files[`src/pages/website/Home.${ext}`] = `${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
+  if (resolvedStyling === 'css') {
+    files[`src/pages/website/Home.${ext}`] = `${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
+import { increment, decrement } from '../../store/slices/counterSlice';` : ''}
+${hasToastify ? `import { toast } from 'react-toastify';` : ''}
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { api, errorMessage } from '../../api/client';
+
+export function Home() {
+  const [health, setHealth] = useState('Ready to test');
+  const [checking, setChecking] = useState(false);
+  async function checkHealth() {
+    setChecking(true);
+    try { const { data } = await api.get('/health'); setHealth(data.message); }
+    catch (err) { setHealth(errorMessage(err)); }
+    finally { setChecking(false); }
+  }
+  ${hasRedux ? `const count = useSelector((state${isTs ? ': any' : ''}) => state.counter.value);
+  const dispatch = useDispatch();` : ''}
+
+  return (
+    <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '1rem' }}>
+        <div>
+          <span className="hero-badge">
+            <span className="hero-badge-dot"></span>
+            MERN 2026 Edition (React 19 + Express 5 + MongoDB)
+          </span>
+        </div>
+        <h1 className="hero-title">
+          Production MERN stack architecture, engineered for velocity.
+        </h1>
+        <p className="hero-lead">
+          A modern foundation with React 19, Express 5 REST API, and MongoDB. Clean separation of concerns with predictable developer ergonomics.
+        </p>
+        <div className="cta-group">
+          ${hasAuth ? `
+          <Link to="/dashboard" className="btn btn-primary" style={{ borderRadius: '9999px', padding: '0.65rem 1.5rem' }}>
+            Open Dashboard
+          </Link>
+          <Link to="/signup" className="btn btn-outline" style={{ borderRadius: '9999px', padding: '0.65rem 1.5rem' }}>
+            Create Account
+          </Link>
+          <Link to="/login" className="btn btn-outline" style={{ borderRadius: '9999px', padding: '0.65rem 1.5rem' }}>
+            Sign In
+          </Link>` : `
+          <Link to="/about" className="btn btn-primary" style={{ borderRadius: '9999px', padding: '0.65rem 1.5rem' }}>
+            About Project
+          </Link>
+          <Link to="/contact" className="btn btn-outline" style={{ borderRadius: '9999px', padding: '0.65rem 1.5rem' }}>
+            Contact
+          </Link>`}
+        </div>
+      </section>
+
+      <div className="terminal-window">
+        <div className="terminal-header">
+          <div className="terminal-dots">
+            <span className="terminal-dot" style={{ backgroundColor: '#ff5f56' }}></span>
+            <span className="terminal-dot" style={{ backgroundColor: '#ffbd2e' }}></span>
+            <span className="terminal-dot" style={{ backgroundColor: '#27c93f' }}></span>
+          </div>
+          <span>quickstart.sh</span>
+        </div>
+        <div className="terminal-body">
+          <div>$ npm run dev</div>
+          <div style={{ color: '#10b981', marginTop: '0.35rem' }}>Client: http://localhost:3000/</div>
+          <div style={{ color: '#10b981' }}>API: http://localhost:5000/api</div>
+          <div style={{ marginTop: '0.35rem' }}>MongoDB: Connected</div>
+        </div>
+      </div>
+
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+        <div className="card" style={{ margin: 0 }}>
+          <h3 className="card-title">Full-Stack Connectivity</h3>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Verify cross-origin Axios calls and Express 5 error handling.
+          </p>
+          <button type="button" disabled={checking} onClick={checkHealth} className="btn btn-primary" style={{ width: '100%' }}>
+            {checking ? 'Connecting...' : 'Check API Health'}
+          </button>
+          <p role="status" style={{ marginTop: '0.75rem', fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+            Status: {health}
+          </p>
+        </div>
+
+        ${hasRedux ? `
+        <div className="card" style={{ margin: 0 }}>
+          <h3 className="card-title">Redux Toolkit</h3>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Global state store with slice reducers.
+          </p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+            Current count: <strong style={{ color: 'var(--text-primary)' }}>{count}</strong>
+          </p>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+            <button type="button" onClick={() => dispatch(decrement())} className="btn btn-outline" style={{ flex: 1 }}>-</button>
+            <button type="button" onClick={() => dispatch(increment())} className="btn btn-outline" style={{ flex: 1 }}>+</button>
+          </div>
+        </div>` : ''}
+
+        ${hasToastify ? `
+        <div className="card" style={{ margin: 0 }}>
+          <h3 className="card-title">Notifications</h3>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Toast notifications ready for user actions.
+          </p>
+          <button type="button" onClick={() => toast.success('React Toastify is working')} className="btn btn-outline" style={{ width: '100%' }}>
+            Trigger Notification
+          </button>
+        </div>` : ''}
+      </section>
+
+      <section className="feature-grid">
+        <div className="feature-card">
+          <h3>React 19 & Vite</h3>
+          <p>Instant HMR with optimized production bundling and modern React patterns.</p>
+        </div>
+        <div className="feature-card">
+          <h3>Express 5 Backend</h3>
+          <p>Native async route handling with Helmet security headers and CORS policy.</p>
+        </div>
+        <div className="feature-card">
+          <h3>MongoDB & Mongoose</h3>
+          <p>Clean schemas with structured data access and transaction support.</p>
+        </div>
+      </section>
+    </div>
+  );
+}
+`;
+  } else {
+    // Tailwind and shadcn modern homepage
+    files[`src/pages/website/Home.${ext}`] = `${hasRedux ? `import { useSelector, useDispatch } from 'react-redux';
 import { increment, decrement } from '../../store/slices/counterSlice';` : ''}
 ${hasToastify ? `import { toast } from 'react-toastify';` : ''}
 ${resolvedStyling === 'shadcn' ? "import { Button } from '../../components/ui/button';\n" : ''}import { Link } from 'react-router-dom';
@@ -516,59 +771,160 @@ export function Home() {
   const dispatch = useDispatch();` : ''}
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Welcome to ${projectName}</h1>
-        <p className="mt-2 text-lg leading-relaxed text-muted-foreground">
-          Your full-stack MERN project is ready. This is the public website home page mounted under <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-mono text-foreground">WebsiteLayout</code>.
-        </p>
-      </div>
-
-      ${hasToastify ? `
-      <div>
-        ${resolvedStyling === 'shadcn'
-          ? `<Button variant="outline" onClick={() => toast.success('React Toastify is working!')}>Test Toast Notification</Button>`
-          : `<button type="button" onClick={() => toast.success('React Toastify is working!')} className="rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">Test Toast Notification</button>`
-        }
-      </div>` : ''}
-
-      ${hasRedux ? `
-      <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
-        <h3 className="text-lg font-semibold text-card-foreground">Redux Toolkit Counter</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Current Count: <strong className="font-semibold text-foreground">{count}</strong></p>
-        <div className="mt-4 flex items-center gap-2">
-          ${resolvedStyling === 'shadcn'
-            ? `<Button variant="outline" size="sm" onClick={() => dispatch(decrement())}>-</Button>
-          <Button variant="outline" size="sm" onClick={() => dispatch(increment())}>+</Button>`
-            : `<button type="button" onClick={() => dispatch(decrement())} className="rounded-md border border-border bg-background px-3 py-1 text-sm font-medium hover:bg-muted">-</button>
-          <button type="button" onClick={() => dispatch(increment())} className="rounded-md border border-border bg-background px-3 py-1 text-sm font-medium hover:bg-muted">+</button>`
-          }
+    <div className="max-w-6xl mx-auto space-y-12 pb-12">
+      {/* 1. Hero Section */}
+      <section className="pt-2 sm:pt-4 space-y-5">
+        <div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/60 px-3.5 py-1 text-xs font-medium text-muted-foreground shadow-xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            MERN 2026 Edition (React 19 + Express 5 + MongoDB)
+          </span>
         </div>
-      </div>` : ''}
-
-      <section className="rounded-xl border border-border bg-card p-6 shadow-xs">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Connection lab</p>
-        <h2 className="my-2 text-2xl font-semibold tracking-tight text-card-foreground">Test the full stack</h2>
-        <p className="mb-4 text-sm text-muted-foreground">Send a request through Axios to your Express health endpoint.</p>
-        ${resolvedStyling === 'shadcn'
-          ? `<Button disabled={checking} onClick={checkHealth}>{checking ? 'Checking…' : 'Check API health'}</Button>`
-          : `<button type="button" disabled={checking} onClick={checkHealth} className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">{checking ? 'Checking…' : 'Check API health'}</button>`
-        }
-        <p role="status" className="mt-3 text-sm font-medium text-foreground">{health}</p>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground leading-[1.12]">
+          Production MERN stack architecture, engineered for velocity.
+        </h1>
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl leading-relaxed">
+          A modern foundation with React 19, Express 5 REST API, and MongoDB. Clean separation of concerns with predictable developer ergonomics.
+        </p>
+        <div className="flex flex-wrap items-center gap-3 pt-2">
+          ${hasAuth ? `
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+          >
+            Open Dashboard
+          </Link>
+          <Link
+            to="/signup"
+            className="inline-flex items-center justify-center rounded-full border border-border bg-background px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            Create Account
+          </Link>
+          <Link
+            to="/login"
+            className="inline-flex items-center justify-center rounded-full border border-border bg-background px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            Sign In
+          </Link>` : `
+          <Link
+            to="/about"
+            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+          >
+            About Project
+          </Link>
+          <Link
+            to="/contact"
+            className="inline-flex items-center justify-center rounded-full border border-border bg-background px-6 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+          >
+            Contact
+          </Link>`}
+        </div>
       </section>
 
-      <div className="flex flex-wrap gap-5 text-sm font-medium">
-        ${hasAuth ? `
-        <Link to="/signup" className="text-primary hover:underline">Create an account</Link>
-        <Link to="/login" className="text-primary hover:underline">Sign in</Link>
-        <Link to="/dashboard" className="text-primary hover:underline">Open dashboard</Link>` : `
-        <Link to="/about" className="text-primary hover:underline">About us</Link>
-        <Link to="/contact" className="text-primary hover:underline">Contact us</Link>`}
+      {/* 2. Interactive Terminal Quickstart Card */}
+      <div className="rounded-2xl border border-border bg-card shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-3 text-xs font-mono text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full bg-red-400" />
+            <span className="h-3 w-3 rounded-full bg-amber-400" />
+            <span className="h-3 w-3 rounded-full bg-emerald-400" />
+          </div>
+          <span>quickstart.sh</span>
+        </div>
+        <div className="p-5 font-mono text-xs sm:text-sm leading-relaxed space-y-1.5 text-foreground bg-card">
+          <div className="text-muted-foreground">$ npm run dev</div>
+          <div className="text-emerald-600 dark:text-emerald-400">Client: http://localhost:3000/</div>
+          <div className="text-emerald-600 dark:text-emerald-400">API: http://localhost:5000/api</div>
+          <div className="text-muted-foreground">MongoDB: Connected</div>
+        </div>
       </div>
+
+      {/* 3. Live Connectivity Lab & Addons */}
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-card-foreground">Full-Stack Connectivity</h3>
+            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
+              Verify cross-origin Axios calls and Express 5 error handling.
+            </p>
+          </div>
+          <div className="mt-6 space-y-3">
+            ${resolvedStyling === 'shadcn'
+              ? `<Button disabled={checking} onClick={checkHealth} className="w-full rounded-xl">{checking ? 'Connecting...' : 'Check API Health'}</Button>`
+              : `<button type="button" disabled={checking} onClick={checkHealth} className="w-full rounded-xl bg-primary py-2 px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors">{checking ? 'Connecting...' : 'Check API Health'}</button>`
+            }
+            <p role="status" className="text-xs font-medium text-foreground">
+              Status: {health}
+            </p>
+          </div>
+        </div>
+
+        ${hasRedux ? `
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-card-foreground">Redux Toolkit</h3>
+            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
+              Global state management with configureStore and slice reducers.
+            </p>
+          </div>
+          <div className="mt-6 space-y-3">
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              Current count: <strong className="font-semibold text-foreground">{count}</strong>
+            </div>
+            <div className="flex items-center gap-2">
+              ${resolvedStyling === 'shadcn'
+                ? `<Button variant="outline" size="sm" onClick={() => dispatch(decrement())} className="flex-1 rounded-lg">-</Button>
+              <Button variant="outline" size="sm" onClick={() => dispatch(increment())} className="flex-1 rounded-lg">+</Button>`
+                : `<button type="button" onClick={() => dispatch(decrement())} className="flex-1 rounded-lg border border-border bg-background py-1.5 text-sm font-medium hover:bg-muted transition-colors">-</button>
+              <button type="button" onClick={() => dispatch(increment())} className="flex-1 rounded-lg border border-border bg-background py-1.5 text-sm font-medium hover:bg-muted transition-colors">+</button>`
+              }
+            </div>
+          </div>
+        </div>` : ''}
+
+        ${hasToastify ? `
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-card-foreground">Notifications</h3>
+            <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground">
+              Toast notifications ready for user actions and form events.
+            </p>
+          </div>
+          <div className="mt-6">
+            ${resolvedStyling === 'shadcn'
+              ? `<Button variant="outline" onClick={() => toast.success('React Toastify is working')} className="w-full rounded-xl">Trigger Notification</Button>`
+              : `<button type="button" onClick={() => toast.success('React Toastify is working')} className="w-full rounded-xl border border-border bg-background py-2 px-4 text-sm font-medium text-foreground hover:bg-muted transition-colors">Trigger Notification</button>`
+            }
+          </div>
+        </div>` : ''}
+      </section>
+
+      {/* 4. Architecture Showcase */}
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+          <h3 className="text-sm font-semibold text-card-foreground">React 19 & Vite</h3>
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+            Instant HMR with optimized production bundling and modern React patterns.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+          <h3 className="text-sm font-semibold text-card-foreground">Express 5 Backend</h3>
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+            Native async route handling with Helmet security headers and CORS policy.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">
+          <h3 className="text-sm font-semibold text-card-foreground">MongoDB & Mongoose</h3>
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+            Clean schemas with structured data access and transaction support.
+          </p>
+        </div>
+      </section>
     </div>
   );
 }
 `;
+  }
 
   files[`src/pages/website/About.${ext}`] = `
 export function About() {

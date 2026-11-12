@@ -4,7 +4,7 @@ export function addAuthServer(files, isTs) {
   const importExt = '.js';
   const handler = isTs ? ': RequestHandler' : '';
   const types = isTs ? "import type { RequestHandler } from 'express';\n" : '';
-  const ctrlTypes = isTs ? "import type { RequestHandler, Request, Response, NextFunction } from 'express';\n" : '';
+  const ctrlTypes = isTs ? "import type { Request, Response, NextFunction } from 'express';\n" : '';
 
   // 1. User Model: src/models/user.model.{js,ts}
   if (isTs) {

@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function StructurePage() {
   return (
-    <article className="space-y-8">
+    <article className="space-y-10">
       <div>
         <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Monorepo Architecture
@@ -127,7 +127,7 @@ export default function StructurePage() {
         </p>
       </div>
 
-      <div className="flex items-center justify-between pt-6 border-t border-border">
+      <div className="flex items-center justify-between pt-6 border-t border-border/80">
         <Link
           href="/docs/quickstart"
           className="inline-flex items-center gap-2 text-sm font-medium text-text-muted hover:text-foreground transition-colors"

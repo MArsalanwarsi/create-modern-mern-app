@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function ModelsPage() {
   return (
-    <article className="space-y-8">
+    <article className="space-y-10">
       <div>
         <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Data Layer Architecture
@@ -80,7 +80,7 @@ export const User = mongoose.model<IUser>('User', userSchema);`}
         <h2 className="text-xl font-bold text-foreground">2. Schema Field Specifications</h2>
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-surface/60 border-b border-border text-foreground font-semibold">
+            <thead className="bg-surface/60 border-b border-border/80 text-foreground font-bold">
               <tr>
                 <th className="p-3">Field</th>
                 <th className="p-3">Type</th>
@@ -122,7 +122,7 @@ export const User = mongoose.model<IUser>('User', userSchema);`}
         <h2 className="text-xl font-bold text-foreground">3. Security Invariants & Projections</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-2">
-            <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+            <div className="flex items-center gap-2 text-foreground font-bold text-sm">
               <Key className="w-4 h-4 text-primary" />
               Password Redaction
             </div>
@@ -132,7 +132,7 @@ export const User = mongoose.model<IUser>('User', userSchema);`}
           </div>
 
           <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-2">
-            <div className="flex items-center gap-2 text-foreground font-semibold text-sm">
+            <div className="flex items-center gap-2 text-foreground font-bold text-sm">
               <Shield className="w-4 h-4 text-primary" />
               Role Protection
             </div>
@@ -143,7 +143,7 @@ export const User = mongoose.model<IUser>('User', userSchema);`}
         </div>
       </div>
 
-      <div className="pt-6 border-t border-border flex justify-between items-center">
+      <div className="pt-6 border-t border-border/80 flex justify-between items-center">
         <Link
           href="/docs/quickstart"
           className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-semibold text-text-muted hover:text-foreground transition-colors"

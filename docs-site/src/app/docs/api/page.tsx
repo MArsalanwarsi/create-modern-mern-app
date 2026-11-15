@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function ApiReferencePage() {
   return (
-    <article className="space-y-8">
+    <article className="space-y-10">
       <div>
         <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           HTTP Transport Contracts
@@ -27,7 +27,7 @@ export default function ApiReferencePage() {
         <h2 className="text-xl font-bold text-foreground">Endpoints Overview</h2>
         <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-surface/60 border-b border-border text-foreground font-semibold">
+            <thead className="bg-surface/60 border-b border-border/80 text-foreground font-bold">
               <tr>
                 <th className="p-3">Method</th>
                 <th className="p-3">Endpoint</th>
@@ -78,7 +78,7 @@ export default function ApiReferencePage() {
       </div>
 
       {/* POST /api/auth/signup */}
-      <div className="space-y-4 pt-4 border-t border-border">
+      <div className="space-y-4 pt-4 border-t border-border/80">
         <div className="flex items-center gap-3">
           <span className="px-2.5 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 font-mono text-xs font-bold">
             POST
@@ -113,7 +113,7 @@ export default function ApiReferencePage() {
       </div>
 
       {/* GET /api/users */}
-      <div className="space-y-4 pt-4 border-t border-border">
+      <div className="space-y-4 pt-4 border-t border-border/80">
         <div className="flex items-center gap-3">
           <span className="px-2.5 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-500 font-mono text-xs font-bold">
             GET
@@ -153,7 +153,7 @@ X-Requested-With: mern-client`}
         />
       </div>
 
-      <div className="flex items-center justify-between pt-6 border-t border-border">
+      <div className="flex items-center justify-between pt-6 border-t border-border/80">
         <Link
           href="/docs/production"
           className="inline-flex items-center gap-2 text-sm font-medium text-text-muted hover:text-foreground transition-colors"

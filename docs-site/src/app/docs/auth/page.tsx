@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function AuthDocsPage() {
   return (
-    <article className="space-y-8">
+    <article className="space-y-10">
       <div>
         <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Security & Access Control
@@ -123,7 +123,7 @@ router.get('/analytics', requireToken, requireRole(['admin', 'member']), getAnal
         />
       </div>
 
-      <div className="pt-6 border-t border-border flex justify-between items-center">
+      <div className="pt-6 border-t border-border/80 flex justify-between items-center">
         <Link
           href="/docs/models"
           className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-semibold text-text-muted hover:text-foreground transition-colors"

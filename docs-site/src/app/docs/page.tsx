@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function DocsPage() {
   return (
-    <article className="space-y-8">
+    <article className="space-y-10">
       <div>
         <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Documentation Overview
@@ -34,7 +34,7 @@ export default function DocsPage() {
         <h2 className="text-2xl font-bold tracking-tight text-foreground">Core Architecture Pillars</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
-            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
+            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-bold">
               <Zap className="w-4 h-4" />
             </div>
             <h3 className="text-base font-semibold text-foreground">React 19 & Vite 8</h3>
@@ -44,7 +44,7 @@ export default function DocsPage() {
           </div>
 
           <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
-            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
+            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-bold">
               <Shield className="w-4 h-4" />
             </div>
             <h3 className="text-base font-semibold text-foreground">Express 5 & Security</h3>
@@ -54,7 +54,7 @@ export default function DocsPage() {
           </div>
 
           <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
-            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
+            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-bold">
               <Layers className="w-4 h-4" />
             </div>
             <h3 className="text-base font-semibold text-foreground">Sliced Layouts</h3>
@@ -64,7 +64,7 @@ export default function DocsPage() {
           </div>
 
           <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
-            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
+            <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-bold">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <h3 className="text-base font-semibold text-foreground">shadcn/ui New York Models</h3>
@@ -75,7 +75,7 @@ export default function DocsPage() {
         </div>
       </div>
 
-      <div className="pt-6 border-t border-border flex justify-between items-center">
+      <div className="pt-6 border-t border-border/80 flex justify-between items-center">
         <span className="text-sm text-text-muted">Next step</span>
         <Link
           href="/docs/quickstart"

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" rx="14" fill="#090a0c" stroke="#1f232b" stroke-width="2" />
+  <!-- Left Pillar -->
+  <path d="M14 46V22C14 20.3431 15.3431 19 17 19H19C20.6569 19 22 20.3431 22 22V46C22 47.1046 21.1046 48 20 48H16C14.8954 48 14 47.1046 14 46Z" fill="#34d399" />
+  <!-- Center Chevron -->
+  <path d="M22 25L30.2 36.8C31.1 38.1 32.9 38.1 33.8 36.8L42 25V32L34.5 42.5C33.2 44.3 30.8 44.3 29.5 42.5L22 32V25Z" fill="#a855f7" />
+  <!-- Right Pillar -->
+  <path d="M42 22C42 20.3431 43.3431 19 45 19H47C48.6569 19 50 20.3431 50 22V46C50 47.1046 49.1046 48 48 48H44C42.8954 48 42 47.1046 42 46V22Z" fill="#38bdf8" />
+  <!-- Central Spark -->
+  <circle cx="32" cy="27" r="2.5" fill="#ffffff" />
+</svg>

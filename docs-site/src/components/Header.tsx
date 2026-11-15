@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 export function Header() {
@@ -8,13 +9,20 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 font-semibold text-foreground">
-            <div className="h-7 w-7 rounded-md bg-foreground text-background flex items-center justify-center font-mono font-bold text-xs">
-              M
+          <Link href="/" className="flex items-center gap-2.5 font-semibold text-foreground group">
+            <div className="relative h-7 w-7 rounded-md overflow-hidden border border-border shadow-2xs group-hover:scale-105 transition-transform">
+              <Image
+                src="/logo.svg"
+                alt="create-modern-mern-app logo"
+                width={28}
+                height={28}
+                className="w-full h-full object-cover"
+                priority
+              />
             </div>
             <span className="text-sm tracking-tight font-semibold">create-modern-mern-app</span>
             <span className="hidden sm:inline-flex rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-mono text-text-muted border border-border">
-              v3.0.8
+              v3.0.11
             </span>
           </Link>
         </div>

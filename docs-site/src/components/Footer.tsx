@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Terminal, Heart } from "lucide-react";
 
 export function Footer() {
@@ -7,9 +8,17 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2 space-y-3">
-            <div className="flex items-center gap-2 font-semibold text-foreground">
-              <span className="font-mono text-sm px-2 py-0.5 rounded bg-surface border border-border">MERN</span>
-              create-modern-mern-app
+            <div className="flex items-center gap-2.5 font-semibold text-foreground">
+              <div className="relative h-6 w-6 rounded-md overflow-hidden border border-border">
+                <Image
+                  src="/logo.svg"
+                  alt="create-modern-mern-app logo"
+                  width={24}
+                  height={24}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="font-semibold text-sm">create-modern-mern-app</span>
             </div>
             <p className="text-sm text-text-muted max-w-sm leading-relaxed">
               Open source CLI generator providing developer-friendly, production-grade full-stack MERN foundations with React 19, Express 5, MongoDB, and shadcn/ui.

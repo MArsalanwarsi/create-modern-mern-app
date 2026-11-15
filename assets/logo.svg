@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090a0c" />
+      <stop offset="50%" stop-color="#0f1115" />
+      <stop offset="100%" stop-color="#14171d" />
+    </linearGradient>
+    <linearGradient id="reactCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="mongoGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="expressViolet" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" />
+      <stop offset="100%" stop-color="#7c3aed" />
+    </linearGradient>
+    <linearGradient id="borderGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2c323d" />
+      <stop offset="100%" stop-color="#181a20" />
+    </linearGradient>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Container Box with Precision Curvature -->
+  <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#bgGrad)" stroke="url(#borderGlow)" stroke-width="6" />
+
+  <!-- Background Grid Pattern for Tech Feel -->
+  <g opacity="0.08" stroke="#ffffff" stroke-width="1.5">
+    <line x1="96" y1="16" x2="96" y2="496" />
+    <line x1="176" y1="16" x2="176" y2="496" />
+    <line x1="256" y1="16" x2="256" y2="496" />
+    <line x1="336" y1="16" x2="336" y2="496" />
+    <line x1="416" y1="16" x2="416" y2="496" />
+    <line x1="16" y1="96" x2="496" y2="96" />
+    <line x1="16" y1="176" x2="496" y2="176" />
+    <line x1="16" y1="256" x2="496" y2="256" />
+    <line x1="16" y1="336" x2="496" y2="336" />
+    <line x1="16" y1="416" x2="496" y2="416" />
+  </g>
+
+  <!-- Modern M Monogram composed of geometric stacked ribbons -->
+  <!-- Left Pillar (Mongo Green Gradient) -->
+  <path d="M128 368V176C128 162.745 138.745 152 152 152H168C181.255 152 192 162.745 192 176V368C192 376.837 184.837 384 176 384H144C135.163 384 128 376.837 128 368Z" fill="url(#mongoGreen)" />
+
+  <!-- Center Apex / V (Express Violet) -->
+  <path d="M192 208L245.172 288.759C250.771 297.277 261.229 297.277 266.828 288.759L320 208L320 264L274.586 333.051C265.254 347.243 246.746 347.243 237.414 333.051L192 264V208Z" fill="url(#expressViolet)" />
+
+  <!-- Right Pillar (React Cyan Gradient) -->
+  <path d="M320 176C320 162.745 330.745 152 344 152H360C373.255 152 384 162.745 384 176V368C384 376.837 376.837 384 368 384H336C327.163 384 320 376.837 320 368V176Z" fill="url(#reactCyan)" />
+
+  <!-- Central Energy Core: Orbiting React Ring / Atomic Spark -->
+  <ellipse cx="256" cy="224" rx="72" ry="24" stroke="#38bdf8" stroke-width="5" stroke-dasharray="14 10" transform="rotate(-25 256 224)" opacity="0.85" filter="url(#subtleGlow)" />
+  <circle cx="256" cy="224" r="7" fill="#ffffff" filter="url(#subtleGlow)" />
+</svg>

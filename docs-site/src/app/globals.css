@@ -1,37 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --surface: #f8f9fa;
-  --surface-hover: #f1f3f5;
-  --border: #e9ecef;
-  --border-strong: #dee2e6;
-  --foreground: #0d0e10;
-  --text-muted: #64748b;
-  --primary: #0d0e10;
-  --primary-hover: #26292e;
-  --on-primary: #ffffff;
-  --accent: #0d0e10;
-  --accent-foreground: #ffffff;
+  /* Premium Warm Alabaster / Chalk Canvas for Light Mode (not blinding pure white) */
+  --background: #fbfbfd;
+  --surface: #f4f4f7;
+  --surface-hover: #ececf1;
+  --border: #e6e6ec;
+  --border-strong: #d8d8e2;
+  --foreground: #121316;
+  --text-muted: #5e6472;
+  --primary: #121316;
+  --primary-hover: #23252a;
+  --on-primary: #fbfbfd;
+  --accent: #121316;
+  --accent-foreground: #fbfbfd;
   --card: #ffffff;
-  --card-border: #e9ecef;
+  --card-border: #e6e6ec;
 }
 
 .dark {
-  --background: #090a0c;
-  --surface: #111317;
-  --surface-hover: #181b21;
-  --border: #1f232b;
-  --border-strong: #2c323d;
-  --foreground: #f8fafc;
-  --text-muted: #94a3b8;
-  --primary: #f8fafc;
-  --primary-hover: #e2e8f0;
-  --on-primary: #090a0c;
+  /* Premium Deep OLED Obsidian / Carbon Canvas for Dark Mode (rich dark luxury) */
+  --background: #08090a;
+  --surface: #0f1115;
+  --surface-hover: #16181e;
+  --border: #1a1d24;
+  --border-strong: #242933;
+  --foreground: #f2f4f8;
+  --text-muted: #8b92a2;
+  --primary: #f2f4f8;
+  --primary-hover: #e2e6ee;
+  --on-primary: #08090a;
   --accent: #ffffff;
-  --accent-foreground: #090a0c;
-  --card: #111317;
-  --card-border: #1f232b;
+  --accent-foreground: #08090a;
+  --card: #0f1115;
+  --card-border: #1a1d24;
 }
 
 @theme inline {
@@ -82,6 +84,13 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* View Transition Styles for Smooth Theme Animation */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 /* Prism Syntax Highlighting Tokens (shadcn-inspired premium dark theme) */

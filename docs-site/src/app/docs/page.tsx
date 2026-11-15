@@ -11,7 +11,7 @@ export default function DocsPage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Documentation Overview
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -22,7 +22,7 @@ export default function DocsPage() {
         </p>
       </div>
 
-      <div className="rounded-xl border border-border bg-surface/50 p-6 space-y-4">
+      <div className="rounded-lg border border-border bg-surface/50 p-6 space-y-4">
         <h3 className="text-base font-semibold text-foreground">One-Command Initialization</h3>
         <p className="text-sm text-text-muted">
           Run the CLI directly via npx. No global packages required:
@@ -33,7 +33,7 @@ export default function DocsPage() {
       <div className="space-y-4">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">Core Architecture Pillars</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
             <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
               <Zap className="w-4 h-4" />
             </div>
@@ -43,7 +43,7 @@ export default function DocsPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
             <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
               <Shield className="w-4 h-4" />
             </div>
@@ -53,7 +53,7 @@ export default function DocsPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
             <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
               <Layers className="w-4 h-4" />
             </div>
@@ -63,7 +63,7 @@ export default function DocsPage() {
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/40 p-5 space-y-2">
             <div className="h-8 w-8 rounded-lg bg-surface flex items-center justify-center text-foreground font-semibold">
               <CheckCircle2 className="w-4 h-4" />
             </div>
@@ -79,7 +79,7 @@ export default function DocsPage() {
         <span className="text-sm text-text-muted">Next step</span>
         <Link
           href="/docs/quickstart"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90 transition-opacity transition-colors"
         >
           Quickstart Guide
           <ArrowRight className="w-3.5 h-3.5" />

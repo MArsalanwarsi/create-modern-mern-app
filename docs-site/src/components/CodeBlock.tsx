@@ -60,7 +60,7 @@ export function CodeBlock({
   const lines = code.trim().split("\n");
 
   return (
-    <div className="relative rounded-xl border border-border bg-[#0d0e10] text-[#f4f5f7] overflow-hidden my-5 shadow-card group">
+    <div className="relative rounded-lg border border-border bg-[#0d0e10] text-[#f4f5f7] overflow-hidden my-5 shadow-card group">
       {/* Top Header Bar */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#22272b] bg-[#14171a]/90 text-xs font-mono">
         <div className="flex items-center gap-2">

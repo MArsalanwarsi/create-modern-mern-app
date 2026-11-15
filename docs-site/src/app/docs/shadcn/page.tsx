@@ -11,7 +11,7 @@ export default function ShadcnDocsPage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           UI Component System
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -25,21 +25,21 @@ export default function ShadcnDocsPage() {
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-foreground">1. Bundled Official Models</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
-            <h3 className="text-base font-semibold text-foreground">dashboard-01</h3>
-            <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+          <div className="rounded-lg border border-border bg-card p-5 space-y-2.5 shadow-sm hover:border-foreground/30 transition-colors">
+            <h3 className="text-sm font-semibold font-mono text-foreground">dashboard-01</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
               4 metric cards with Tabler icons, interactive Recharts AreaChart, and TanStack React Table with drag-and-drop sortable rows.
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
-            <h3 className="text-base font-semibold text-foreground">login-01</h3>
-            <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+          <div className="rounded-lg border border-border bg-card p-5 space-y-2.5 shadow-sm hover:border-foreground/30 transition-colors">
+            <h3 className="text-sm font-semibold font-mono text-foreground">login-01</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
               Card wrapper with FieldGroup, FieldLabel, input validation, and password recovery placeholders.
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-surface/40 p-5 space-y-2">
-            <h3 className="text-base font-semibold text-foreground">signup-01</h3>
-            <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
+          <div className="rounded-lg border border-border bg-card p-5 space-y-2.5 shadow-sm hover:border-foreground/30 transition-colors">
+            <h3 className="text-sm font-semibold font-mono text-foreground">signup-01</h3>
+            <p className="text-xs text-text-muted leading-relaxed">
               Full name, email, password, and confirmation with instant client-side password matching validation.
             </p>
           </div>
@@ -51,6 +51,7 @@ export default function ShadcnDocsPage() {
         <p className="text-sm text-text-muted leading-relaxed">
           The scaffolded project includes a pre-configured <code>components.json</code> with all necessary path aliases. You can run <code>npx shadcn@latest add &lt;component&gt;</code> without manual directory prompts:
         </p>
+
         <CodeBlock
           title="client/components.json"
           language="json"
@@ -62,8 +63,9 @@ export default function ShadcnDocsPage() {
   "tailwind": {
     "config": "",
     "css": "src/index.css",
-    "baseColor": "slate",
-    "cssVariables": true
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
   },
   "iconLibrary": "lucide",
   "aliases": {
@@ -78,27 +80,36 @@ export default function ShadcnDocsPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-bold text-foreground">3. Adding More Components</h2>
+        <h2 className="text-xl font-bold text-foreground">3. Adding More shadcn Primitives</h2>
         <p className="text-sm text-text-muted leading-relaxed">
-          Navigate into <code>client/</code> and install any additional shadcn primitive:
+          Because the CLI configures official path aliases and Tailwind v4 themes out of the box, extending your UI is seamless:
         </p>
-        <CodeBlock code="cd client && npx shadcn@latest add dialog calendar popover" language="bash" />
+
+        <CodeBlock
+          title="Terminal (Inside client workspace)"
+          language="bash"
+          code={`cd client
+npx shadcn@latest add dialog
+npx shadcn@latest add dropdown-menu
+npx shadcn@latest add table
+npx shadcn@latest add avatar`}
+        />
       </div>
 
-      <div className="pt-6 border-t border-border flex justify-between items-center">
+      <div className="flex items-center justify-between pt-6 border-t border-border">
         <Link
           href="/docs/architecture"
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-xs font-semibold text-text-muted hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-medium text-text-muted hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Sliced Layouts
+          <ArrowLeft className="w-4 h-4" />
+          Sliced Layouts & Routing
         </Link>
         <Link
           href="/docs/ui"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity"
         >
-          Landing Page & UI
-          <ArrowRight className="w-3.5 h-3.5" />
+          Landing Page & UI Design
+          <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
     </article>

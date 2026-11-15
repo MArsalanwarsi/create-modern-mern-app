@@ -11,7 +11,7 @@ export default function UiDocsPage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Visual System
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -37,7 +37,7 @@ export default function UiDocsPage() {
 
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-foreground">2. Homepage Slices & Features</h2>
-        <div className="rounded-xl border border-border bg-surface/30 p-5 space-y-3">
+        <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-3">
           <div className="font-semibold text-foreground text-sm">Pre-Configured Homepage Capabilities:</div>
           <ul className="list-disc list-inside text-xs sm:text-sm text-text-muted space-y-1">
             <li><strong>Hero Section:</strong> Live pulsing status badge, responsive headline, and single-click dashboard CTA.</li>
@@ -66,7 +66,7 @@ export default function UiDocsPage() {
         </Link>
         <Link
           href="/docs/production"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90 transition-opacity transition-colors"
         >
           Production Hardening
           <ArrowRight className="w-3.5 h-3.5" />

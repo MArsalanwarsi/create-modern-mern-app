@@ -11,7 +11,7 @@ export default function QuickstartPage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Setup Instructions
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -43,7 +43,7 @@ export default function QuickstartPage() {
         <p className="text-sm text-text-muted">
           The Clack-powered CLI wizard will guide you through:
         </p>
-        <div className="rounded-xl border border-border bg-surface/30 p-4 font-mono text-xs space-y-2 text-foreground">
+        <div className="rounded-lg border border-border bg-surface/30 p-4 font-mono text-xs space-y-2 text-foreground">
           <div>? Select language and compiler (TypeScript, React Compiler, or JavaScript)</div>
           <div>? Choose styling system (shadcn/ui, Tailwind CSS v4, or clean CSS)</div>
           <div>? Include authentication and protected dashboard (Yes/No)</div>
@@ -95,7 +95,7 @@ npm run dev`}
         </Link>
         <Link
           href="/docs/models"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90 transition-opacity transition-colors"
         >
           Models & Schemas
           <ArrowRight className="w-3.5 h-3.5" />

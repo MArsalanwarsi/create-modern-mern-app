@@ -11,7 +11,7 @@ export default function ProductionDocsPage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Production & Deployment
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -25,25 +25,25 @@ export default function ProductionDocsPage() {
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-foreground">1. Security Architecture</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-surface/30 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-2">
             <h3 className="text-base font-semibold text-foreground">Helmet Security Headers</h3>
             <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
               Standardized HTTP headers preventing MIME sniffing, XSS, and clickjacking attacks.
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-surface/30 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-2">
             <h3 className="text-base font-semibold text-foreground">Scoped CORS Policy</h3>
             <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
               Restricts cross-origin API access strictly to your client URL with <code>credentials: true</code>.
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-surface/30 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-2">
             <h3 className="text-base font-semibold text-foreground">CSRF Protection</h3>
             <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
               Enforces <code>X-Requested-With: mern-client</code> headers on all state-modifying requests.
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-surface/30 p-5 space-y-2">
+          <div className="rounded-lg border border-border bg-surface/30 p-5 space-y-2">
             <h3 className="text-base font-semibold text-foreground">Brute-Force Rate Limiting</h3>
             <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
               Shared IP rate limiting on login and registration with opt-in MongoDB store for multi-replica setups.
@@ -81,7 +81,7 @@ export default function ProductionDocsPage() {
         </Link>
         <Link
           href="/docs/quickstart"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90 transition-opacity transition-colors"
         >
           Back to Quickstart
         </Link>

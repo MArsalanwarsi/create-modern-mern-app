@@ -11,7 +11,7 @@ export default function StructurePage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Monorepo Architecture
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -117,7 +117,7 @@ export default function StructurePage() {
         />
       </div>
 
-      <div className="rounded-xl border border-border bg-surface/50 p-6 space-y-3">
+      <div className="rounded-lg border border-border bg-surface/50 p-6 space-y-3">
         <h3 className="font-semibold text-foreground flex items-center gap-2">
           <CheckCircle2 className="w-5 h-5 text-emerald-500" />
           Strict Cross-Platform Conventions
@@ -137,7 +137,7 @@ export default function StructurePage() {
         </Link>
         <Link
           href="/docs/models"
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity transition-colors"
         >
           Models & Database Schemas
           <ArrowRight className="w-4 h-4" />

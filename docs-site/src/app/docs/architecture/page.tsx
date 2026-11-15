@@ -11,7 +11,7 @@ export default function ArchitectureDocsPage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           Client Architecture
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -27,7 +27,7 @@ export default function ArchitectureDocsPage() {
         <p className="text-sm text-text-muted leading-relaxed">
           Instead of monolithic page wrappers, navigation and shell components are sliced into <code>client/src/layout/slices/</code>:
         </p>
-        <div className="rounded-xl border border-border bg-surface/30 p-4 font-mono text-xs space-y-1.5 text-foreground">
+        <div className="rounded-lg border border-border bg-surface/30 p-4 font-mono text-xs space-y-1.5 text-foreground">
           <div className="text-primary font-semibold">client/src/layout/</div>
           <div>├── WebsiteLayout.tsx       # Public shell (Navbar + Content + Footer)</div>
           <div>├── DashboardLayout.tsx     # Authenticated shell (Sidebar + Header + Outlet)</div>
@@ -101,7 +101,7 @@ export default function App() {
         </Link>
         <Link
           href="/docs/shadcn"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-1.5 rounded-md bg-foreground px-4 py-2 text-xs font-semibold text-background hover:opacity-90 transition-opacity transition-colors"
         >
           shadcn/ui Models
           <ArrowRight className="w-3.5 h-3.5" />

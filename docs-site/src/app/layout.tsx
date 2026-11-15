@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "create-modern-mern-app | Official Documentation & Architecture Guide",
@@ -51,7 +52,7 @@ const jsonLd = {
       "operatingSystem": "Cross-platform (Windows, macOS, Linux)",
       "description":
         "Interactive npm CLI generator for production-ready MERN stack apps with Vite, React 19, Express 5, and MongoDB.",
-      "softwareVersion": "3.0.7",
+      "softwareVersion": "3.0.8",
       "license": "https://opensource.org/licenses/MIT",
       "author": {
         "@type": "Person",
@@ -82,15 +83,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased min-h-screen flex flex-col bg-background text-foreground">
-        {children}
+      <body className="antialiased min-h-screen flex flex-col bg-background text-foreground transition-colors duration-150">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

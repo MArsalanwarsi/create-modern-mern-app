@@ -11,7 +11,7 @@ export default function ApiReferencePage() {
   return (
     <article className="space-y-8">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-muted mb-4">
+        <div className="inline-flex items-center gap-2 rounded-md border border-border bg-surface px-2.5 py-1 text-xs font-medium text-text-muted mb-4">
           HTTP Transport Contracts
         </div>
         <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
@@ -25,7 +25,7 @@ export default function ApiReferencePage() {
       {/* Endpoints overview table */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold text-foreground">Endpoints Overview</h2>
-        <div className="rounded-xl border border-border overflow-hidden">
+        <div className="rounded-lg border border-border overflow-hidden">
           <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-surface/60 border-b border-border text-foreground font-semibold">
               <tr>
@@ -163,7 +163,7 @@ X-Requested-With: mern-client`}
         </Link>
         <Link
           href="/docs/quickstart"
-          className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-on-primary hover:bg-primary-hover transition-colors"
+          className="inline-flex items-center gap-2 rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity transition-colors"
         >
           Quickstart & Setup
           <ArrowRight className="w-4 h-4" />
